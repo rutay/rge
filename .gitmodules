@@ -1,0 +1,12 @@
+[submodule "third_party/tinygltf"]
+	path = third_party/tinygltf
+	url = https://github.com/syoyo/tinygltf
+[submodule "third_party/bgfx.cmake"]
+	path = third_party/bgfx.cmake
+	url = https://github.com/widberg/bgfx.cmake
+[submodule "third_party/glfw"]
+	path = third_party/glfw
+	url = https://github.com/glfw/glfw
+[submodule "third_party/bullet3"]
+	path = third_party/bullet3
+	url = https://github.com/bulletphysics/bullet3

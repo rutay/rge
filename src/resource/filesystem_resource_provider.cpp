@@ -12,7 +12,7 @@ size_t ResourceProvider::request(char const* path, uint8_t* buffer)
     if (!file.is_open())
     {
         std::cerr << "Resource not found: " << path << std::endl;
-        return false;
+        throw;
     }
     
     std::streamsize size = file.tellg();
@@ -26,11 +26,7 @@ size_t ResourceProvider::request(char const* path, uint8_t* buffer)
 
 size_t ResourceProvider::request(char const* path, std::vector<uint8_t>& buffer)
 {
-    size_t size = ResourceProvider::request(path, NULL);
-
-    buffer.resize(size);
-    
-    return ResourceProvider::request(path, buffer);
+    return ResourceProvider::request(path, buffer.data());
 }
 
 #endif

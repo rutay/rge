@@ -165,6 +165,8 @@ endif()
 # Assets
 # ------------------------------------------------------------------------------------------------
 
+set(ASSETS_SRC_DIR "assets")
+
 # `rge_define_shader` <SHADER_FILENAME> <SHADER_TYPE> [SHADER_VARYINGDEF_FILENAME]
 #
 # * SHADER_FILENAME            - where to find the shader, relative to the assets/ folder.
@@ -197,15 +199,47 @@ endfunction()
 # `rge_define_model` <MODEL_FILENAME>
 #
 # * MODEL_FILENAME - the filename of the model, relative to the assets/ folder.
-function (rge_define_model MODEL_FILENAME)
-	set(MODELS_SRC_DIR "${ASSETS_SRC_DIR}/models")
-	set(MODELS_TARGET_DIR "${ASSETS_TARGET_DIR}/models")
+function (rge_require_assets GAME_NAME)
 
-	file(MAKE_DIRECTORY ${MODELS_TARGET_DIR})
+	math(EXPR ARGC "${ARGC}-1")
+	foreach (ARGi RANGE 1 ${ARGC})
 
-	set(MODEL_SRC "${MODELS_SRC_DIR}/${MODEL_FILENAME}")
+		set(INPUT_SRC_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/${ARGV${ARGi}}")
+		
+		if (IS_DIRECTORY ${INPUT_SRC_PATH})
+			file(GLOB_RECURSE ASSETS_SRC_PATH "${INPUT_SRC_PATH}/*")
+		else()
+			set(ASSETS_SRC_PATH ${INPUT_SRC_PATH})
+		endif()
 
-	file(COPY ${MODEL_SRC} DESTINATION ${MODELS_TARGET_DIR})
+		foreach (ASSET_SRC_PATH ${ASSETS_SRC_PATH})
+			
+			file(RELATIVE_PATH ASSET_NAME ${CMAKE_CURRENT_SOURCE_DIR} ${ASSET_SRC_PATH})
+			set(ASSET_DST_PATH "${CMAKE_CURRENT_BINARY_DIR}/${ASSET_NAME}")
+
+			add_custom_command(
+				OUTPUT ${ASSET_DST_PATH}
+				COMMAND ${CMAKE_COMMAND} -E copy ${ASSET_SRC_PATH} ${ASSET_DST_PATH}
+				MAIN_DEPENDENCY ${ASSET_SRC_PATH}
+				COMMENT "Copying required asset: ${ASSET_NAME}"
+				VERBATIM
+			)
+
+			list(APPEND REQUIRED_ASSETS ${ASSET_DST_PATH})
+			
+			rge_log(STATUS "Required asset: ${ASSET_NAME}")
+
+		endforeach()
+
+	endforeach()
+ 
+	# The given list of required assets is grouped in a single target.
+	set(REQUIRED_ASSETS_TARGET "${GAME_NAME}_required_assets")
+	add_custom_target(${REQUIRED_ASSETS_TARGET} DEPENDS ${REQUIRED_ASSETS})
+	
+	# The target is then added as a dependency of the game's executable.
+	add_dependencies(${GAME_NAME} ${REQUIRED_ASSETS_TARGET})
+
 endfunction()
 
 # ------------------------------------------------------------------------------------------------

@@ -163,13 +163,13 @@ void GltfSceneLoader::clear_cache()
 
 void GltfSceneLoader::print_cache()
 {
-    char const* prefix = "GltfSceneLoader";
-
-    printf("[%s] Scenes: %lld\n",    prefix, m_scene_by_idx.size());
-    printf("[%s] Nodes: %lld\n",     prefix, m_node_by_idx.size());
-    printf("[%s] Meshes: %lld\n",    prefix, m_mesh_by_idx.size());
-    printf("[%s] Materials: %lld\n", prefix, m_material_by_idx.size());
-    printf("[%s] Buffers: %lld\n",   prefix, m_buffer_by_accessor_idx.size());
+    printf("Scenes: %lld, Nodes: %lld, Meshes: %lld, Materials: %lld, Buffers: %lld\n",
+        m_scene_by_idx.size(),
+        m_node_by_idx.size(),
+        m_mesh_by_idx.size(),
+        m_material_by_idx.size(),
+        m_buffer_by_accessor_idx.size()
+   );
 }
 
 Node* GltfSceneLoader::load(tinygltf::Model& gltf_model)

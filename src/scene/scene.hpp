@@ -9,12 +9,26 @@
 
 namespace rge
 {
-    struct Material
+    enum struct ComponentType
     {
-        float m_albedo[3];
-        float m_metallic;
-        float m_roughness;
-        float m_ao;
+        BYTE = 5120,
+        UNSIGNED_BYTE = 5121,
+        SHORT = 5122,
+        UNSIGNED_SHORT = 5123,
+        UNSIGNED_INT = 5125,
+        FLOAT = 5126
+    };
+
+    struct Buffer
+    {
+        ComponentType m_component_type;
+        size_t m_num_components;
+        size_t m_count;
+
+        size_t m_stride;
+        std::vector<uint8_t> m_data;
+
+        bool m_normalized;
     };
 
     enum class LightType
@@ -56,26 +70,12 @@ namespace rge
         SpotLight() : Light(LightType::SPOT) {}
     };
 
-    enum struct ComponentType
+    struct Material
     {
-        BYTE           = 5120,
-        UNSIGNED_BYTE  = 5121,
-        SHORT          = 5122,
-        UNSIGNED_SHORT = 5123,
-        UNSIGNED_INT   = 5125,
-        FLOAT          = 5126
-    };
-
-    struct Buffer
-    {
-        ComponentType m_component_type;
-        size_t m_num_components;
-        size_t m_count;
-
-        size_t m_stride;
-        std::vector<uint8_t> m_data;
-
-        bool m_normalized;
+        float m_albedo[3];
+        float m_metallic;
+        float m_roughness;
+        float m_ao;
     };
 
     enum AttributeType

@@ -2,6 +2,13 @@
 
 using namespace rge;
 
+size_t AccessorBuffer::get_data_size() const
+{
+    return m_num_components * m_component_size;
+}
+
+// ----------------------------------------------------------
+
 bool Node::is_orphan()
 {
     return m_parent;

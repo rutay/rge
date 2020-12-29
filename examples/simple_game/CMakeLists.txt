@@ -20,4 +20,5 @@ rge_require_assets(
 	simple_game
 	"models/gumball_darwin.glb"
 	"models/shrek"
+	"models/McLaren.glb"
 )

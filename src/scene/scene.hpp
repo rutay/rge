@@ -23,13 +23,17 @@ namespace rge
     struct AccessorBuffer
     {
         ComponentType m_component_type;
+        size_t m_component_size;
         size_t m_num_components;
+
         size_t m_count;
 
         size_t m_stride;
         std::vector<uint8_t> m_data;
 
         bool m_normalized;
+
+        size_t get_data_size() const;
     };
 
     enum class LightType

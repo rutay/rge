@@ -23,6 +23,7 @@ AccessorBuffer* GltfSceneLoader::create_buffer_from_accessor(tinygltf::Model& gl
     tinygltf::Accessor& gltf_accessor = gltf_model.accessors[accessor_idx];
 
     result->m_component_type = static_cast<ComponentType>(gltf_accessor.componentType);
+    result->m_component_size = tinygltf::GetComponentSizeInBytes(gltf_accessor.componentType);
     result->m_num_components = tinygltf::GetNumComponentsInType(gltf_accessor.type);
     result->m_count = gltf_accessor.count;
 
@@ -31,7 +32,7 @@ AccessorBuffer* GltfSceneLoader::create_buffer_from_accessor(tinygltf::Model& gl
 
     size_t byte_offset = gltf_buffer_view.byteOffset;
     size_t byte_length = gltf_buffer_view.byteLength;
-    size_t byte_stride = gltf_buffer_view.byteStride;
+    size_t byte_stride = gltf_buffer_view.byteStride > 0 ? gltf_buffer_view.byteStride : result->get_data_size();
 
     uint8_t* data = gltf_buffer.data.data();
     data += byte_offset;
@@ -99,6 +100,9 @@ Mesh* GltfSceneLoader::load_mesh(tinygltf::Model& gltf_model, int mesh_idx)
 
         result->m_attributes[attrib_type] = accessor_idx >= 0 ? create_buffer_from_accessor(gltf_model, accessor_idx) : NULL;
     }
+
+    int accessor_idx = gltf_primitive.indices;
+    result->m_indices = accessor_idx >= 0 ? create_buffer_from_accessor(gltf_model, accessor_idx) : NULL;
 
     m_mesh_by_idx.insert({ mesh_idx, result });
 

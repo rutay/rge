@@ -114,7 +114,7 @@ bool bgfx_create_vertex_layout(bgfx::VertexLayout& result, rge::AttribType attri
     result
         .begin()
         .add(bgfx_attrib_type, accessor->m_num_components, bgfx_comp_type, accessor->m_normalized)
-        .skip(accessor->m_stride)
+        .skip(accessor->m_stride - accessor->get_data_size())
         .end();
 
     return true;
@@ -137,7 +137,7 @@ bool bgfx_allocate_vbo_from_attrib_accessor(bgfx::VertexBufferHandle& result, rg
 bool bgfx_allocate_ibo_from_accessor(bgfx::IndexBufferHandle& result, AccessorBuffer const* accessor)
 {
     bgfx::Memory const* memory = bgfx_copy_memory_from_accessor_buffer(accessor);
-    result = bgfx::createIndexBuffer(memory);
+    result = bgfx::createIndexBuffer(memory, BGFX_BUFFER_INDEX32);
     return true;
 }
 
@@ -200,6 +200,10 @@ void Renderer_DrawMeshCommand::create(Renderer_DrawMeshCommand& command, Mesh co
         }
         command.m_index_buffer = ibo;
     }
+    else
+    {
+        printf("Mesh without IBO? Weird...\n");
+    }
 
     bgfx::VertexBufferHandle idb;
     bgfx_allocate_idb_from_nodes(idb, nodes);
@@ -249,6 +253,7 @@ void Renderer_SceneGraphCache::remap_by_mesh(Node const* scene_graph)
 
     scene_graph->traverse_const([&](Node const* node) {
         Mesh* mesh = node->m_mesh;
+
         m_nodes_by_mesh.insert({ mesh, std::vector<Node const*>() });
         m_nodes_by_mesh.at(node->m_mesh).push_back(node);
     });
@@ -260,14 +265,20 @@ void Renderer_SceneGraphCache::rebuild_draw_mesh_commands()
 
     for (auto& [mesh, nodes] : m_nodes_by_mesh)
     {
-        Renderer_DrawMeshCommand draw_mesh_cmd;
-        Renderer_DrawMeshCommand::create(draw_mesh_cmd, mesh, nodes);
-        m_draw_mesh_commands.push_back(draw_mesh_cmd);
+        if (mesh)
+        {
+            Renderer_DrawMeshCommand draw_mesh_cmd;
+            Renderer_DrawMeshCommand::create(draw_mesh_cmd, mesh, nodes);
+            m_draw_mesh_commands.push_back(draw_mesh_cmd);
+
+        }
     }
 }
 
 void Renderer_SceneGraphCache::rebuild(Node const* scene_graph)
 {
+    printf("Rebuilding scene_graph cache\n");
+
     remap_by_mesh(scene_graph);
     rebuild_draw_mesh_commands();
 }

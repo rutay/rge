@@ -40,13 +40,14 @@ add_compile_definitions(BUILD_CLIENT)
 set(RGE_SRCS
 	"src/resource/filesystem_resource_provider.cpp"
 	"src/resource/http_resource_provider.cpp"
+	"src/resource/resource_provider.cpp"
 	"src/resource/resource_provider.hpp"
 	"src/cli/boot_glfw.cpp"
 	"src/server/main.cpp"
 	"src/cli/render/camera.hpp"
 	"src/cli/render/camera.cpp"
-	#"src/cli/render/renderer.cpp"
-	#"src/cli/render/renderer.hpp"
+	"src/cli/render/renderer.cpp"
+	"src/cli/render/renderer.hpp"
 
 	# Booter
 	"src/cli/boot.hpp"
@@ -165,38 +166,50 @@ endif()
 # Assets
 # ------------------------------------------------------------------------------------------------
 
-set(ASSETS_SRC_DIR "assets")
-
-# `rge_define_shader` <SHADER_FILENAME> <SHADER_TYPE> [SHADER_VARYINGDEF_FILENAME]
+# `rge_compile_shader` <SHADER_FILENAME> <SHADER_TYPE> <SHADER_VARYINGDEF_FILENAME>
 #
+# * SHADERS_VAR                - the list variable where to append the generated CMake command.
 # * SHADER_FILENAME            - where to find the shader, relative to the assets/ folder.
 # * SHADER_TYPE                - the type of the shader (v|f).
 # * SHADER_VARYINGDEF_FILENAME - where to find the varyingdef,  relative to the assets/ folder.
-function (rge_compile_shader SHADER_NAME SHADER_TYPE VARYING_DEF_NAME)
-	set(SHADERS_SRC_DIR "${ASSETS_SRC_DIR}/shaders")
+# * SRC_DIR                    - the directory where to search assets/shaders/${SHADER_NAME}. By default: ${CMAKE_CURRENT_BINARY_DIR}.
+# * DST_DIR                    - the directory where to put the assets/shaders/${SHADER_DST_NAME} (compiled).
+function (rge_compile_shader SHADERS_VAR SHADER_NAME SHADER_TYPE VARYING_DEF_NAME SRC_DIR DST_DIR)
+	if (NOT DEFINED SRC_DIR)
+		set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+	endif()
 
+	if (NOT DEFINED DST_DIR)
+		set(DST_DIR ${CMAKE_CURRENT_BINARY_DIR})
+	endif()
+
+	set(ASSETS_SRC_DIR "${SRC_DIR}/assets")
+	set(ASSETS_DST_DIR "${DST_DIR}/assets")
+
+	set(SHADERS_SRC_DIR "${ASSETS_SRC_DIR}/cli/shaders")
 	set(SHADER_SRC "${SHADERS_SRC_DIR}/${SHADER_NAME}")
 	set(VARYING_DEF_SRC "${SHADERS_SRC_DIR}/${VARYING_DEF_NAME}")
 
-	set(SHADERS_TARGET_DIR "${ASSETS_TARGET_DIR}/shaders")
-	file(MAKE_DIRECTORY ${SHADERS_TARGET_DIR})
+	set(SHADERS_DST_DIR "${ASSETS_DST_DIR}/cli/shaders")
 
 	get_filename_component(SHADER_NAME_WLE ${SHADER_NAME} NAME_WLE)
-	set(SHADER_TARGET_NAME "${SHADER_NAME_WLE}.bin")
-	set(SHADER_TARGET "${SHADERS_TARGET_DIR}/${SHADER_TARGET_NAME}")
-
-	set(SHADERS ${SHADERS} ${SHADER_TARGET} PARENT_SCOPE)
+	set(SHADER_DST_NAME "${SHADER_NAME_WLE}.bin")
+	set(SHADER_DST "${SHADERS_DST_DIR}/${SHADER_DST_NAME}")
 
 	add_custom_command(
-		OUTPUT ${SHADER_TARGET}
-		COMMAND $<TARGET_FILE:shaderc> -f ${SHADER_SRC} -i ${BGFX_SHADERS_INCLUDE_DIR} --type ${SHADER_TYPE} --varyingdef ${VARYING_DEF_SRC} -o ${SHADER_TARGET}
+		OUTPUT ${SHADER_DST}
+		COMMAND $<TARGET_FILE:shaderc> -f ${SHADER_SRC} -i "${RGE_HOME}/${BGFX_SHADER_INCLUDE_DIR}" --type ${SHADER_TYPE} --varyingdef ${VARYING_DEF_SRC} -o ${SHADER_DST}
 		DEPENDS shaderc
 		MAIN_DEPENDENCY ${SHADER_SRC} ${VARYING_DEF_SRC}
 		COMMENT "Compiling shader using shaderc: ${SHADER_NAME} (${SHADER_TYPE})"
 	)
+
+	set(SHADERS_TMP ${${SHADERS_VAR}})
+	list(APPEND SHADERS_TMP ${SHADER_DST})
+	set(${SHADERS_VAR} ${SHADERS_TMP} PARENT_SCOPE)
 endfunction()
 
-# `rge_define_model` <MODEL_FILENAME>
+# `rge_require_assets` <MODEL_FILENAME>
 #
 # * MODEL_FILENAME - the filename of the model, relative to the assets/ folder.
 function (rge_require_assets GAME_NAME)
@@ -227,17 +240,14 @@ function (rge_require_assets GAME_NAME)
 
 			list(APPEND REQUIRED_ASSETS ${ASSET_DST_PATH})
 			
-			rge_log(STATUS "Required asset: ${ASSET_NAME}")
+			rge_log(STATUS "Asset: ${ASSET_NAME}")
 
 		endforeach()
 
 	endforeach()
  
-	# The given list of required assets is grouped in a single target.
 	set(REQUIRED_ASSETS_TARGET "${GAME_NAME}_required_assets")
 	add_custom_target(${REQUIRED_ASSETS_TARGET} DEPENDS ${REQUIRED_ASSETS})
-	
-	# The target is then added as a dependency of the game's executable.
 	add_dependencies(${GAME_NAME} ${REQUIRED_ASSETS_TARGET})
 
 endfunction()
@@ -249,16 +259,31 @@ endfunction()
 # `rge_define_game` <GAME_NAME>
 #
 # * GAME_NAME    - the name of the game executable created.
-function (rge_define_game GAME_NAME GAME_SRCS)
+function (rge_define_game GAME_NAME SRCS SHADERS)
 
 	rge_log(NOTICE "Game definition: ${GAME_NAME}")
 
 	# Prepares a list containing the RGE's sources and the game's sources.
 	# The engine sources must be taken according to the set RGE_HOME.
 	rge_abs_path(FINAL_SRCS "${RGE_SRCS}")
-	list(APPEND FINAL_SRCS ${GAME_SRCS})
+	list(APPEND FINAL_SRCS ${SRCS})
 
 	add_executable(${GAME_NAME} ${FINAL_SRCS})
+
+	# ----------------------------------------------------------------
+	# Assets
+	# ----------------------------------------------------------------
+
+	rge_compile_shader(SHADERS "draw_mesh_fs.sc" "f" "draw_mesh_def.sc" ${RGE_HOME} "${CMAKE_CURRENT_BINARY_DIR}/.rge")
+	rge_compile_shader(SHADERS "simple_inst_vs.sc" "v" "draw_mesh_def.sc" ${RGE_HOME} "${CMAKE_CURRENT_BINARY_DIR}/.rge")
+
+	set(SHADERS_TARGET_NAME "${GAME_NAME}_shaders")
+	add_custom_target(${SHADERS_TARGET_NAME} DEPENDS ${SHADERS})
+	add_dependencies(${GAME_NAME} ${SHADERS_TARGET_NAME})
+
+	# ----------------------------------------------------------------
+	# Dependencies
+	# ----------------------------------------------------------------
 
 	# RGE
 	target_include_directories(${GAME_NAME} PUBLIC "${RGE_HOME}/${RGE_INCLUDE_DIR}")
@@ -267,7 +292,6 @@ function (rge_define_game GAME_NAME GAME_SRCS)
 	target_include_directories(${GAME_NAME} PUBLIC "${RGE_HOME}/${BULLET_INCLUDE_DIR}")
 	target_link_libraries(${GAME_NAME} ${BULLET_LIBS})
 
-	# tinygltf
 	target_include_directories(${GAME_NAME} PUBLIC "${RGE_HOME}/${TINYGLTF_INCLUDE_DIR}")
 
 	if (BUILD_CLIENT)

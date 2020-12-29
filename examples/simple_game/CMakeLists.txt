@@ -5,13 +5,19 @@ project(simple_game)
 set(RGE_HOME "${CMAKE_CURRENT_SOURCE_DIR}/../.." CACHE STRING "" FORCE)
 include("${RGE_HOME}/RGECommon.cmake")
 
-rge_define_game(
-	simple_game
+set(SRCS
 	"src/entry.cpp"
 	"src/entry.hpp"
 )
 
-rge_require_assets(simple_game
+set(SHADERS
+	# ...
+)
+
+rge_define_game(simple_game ${SRCS} ${SHADERS})
+
+rge_require_assets(
+	simple_game
 	"models/gumball_darwin.glb"
 	"models/shrek"
 )

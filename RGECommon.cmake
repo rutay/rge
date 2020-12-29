@@ -274,8 +274,8 @@ function (rge_define_game GAME_NAME SRCS SHADERS)
 	# Assets
 	# ----------------------------------------------------------------
 
-	rge_compile_shader(SHADERS "draw_mesh_fs.sc" "f" "draw_mesh_def.sc" ${RGE_HOME} "${CMAKE_CURRENT_BINARY_DIR}/.rge")
-	rge_compile_shader(SHADERS "simple_inst_vs.sc" "v" "draw_mesh_def.sc" ${RGE_HOME} "${CMAKE_CURRENT_BINARY_DIR}/.rge")
+	rge_compile_shader(SHADERS "draw_mesh_fs.shader" "f" "draw_mesh_def.shader" ${RGE_HOME} "${CMAKE_CURRENT_BINARY_DIR}/.rge")
+	rge_compile_shader(SHADERS "simple_inst_vs.shader" "v" "draw_mesh_def.shader" ${RGE_HOME} "${CMAKE_CURRENT_BINARY_DIR}/.rge")
 
 	set(SHADERS_TARGET_NAME "${GAME_NAME}_shaders")
 	add_custom_target(${SHADERS_TARGET_NAME} DEPENDS ${SHADERS})

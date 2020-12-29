@@ -12,10 +12,13 @@ void Simple_Game::on_init()
 
     rge::GltfSceneLoader loader;
     m_scene = loader.load_from_resource("assets/models/gumball_darwin.glb");
+
+    m_renderer = new rge::Renderer();
 }
 
 void Simple_Game::on_render()
 {
+
 }
 
 RGE_DEFINE_MAIN(Simple_Game);

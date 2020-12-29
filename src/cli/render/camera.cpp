@@ -2,7 +2,7 @@
 
 #include <bgfx/bgfx.h>
 
-// ------------------------------------------------------------------------------------------------ Camera
+using namespace rge;
 
 Camera::Camera() :
     m_position({0, 0, 0}),

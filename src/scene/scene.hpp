@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <functional>
 
 #include <bx/math.h>
 #include <bgfx/bgfx.h>
@@ -19,7 +20,7 @@ namespace rge
         FLOAT = 5126
     };
 
-    struct Buffer
+    struct AccessorBuffer
     {
         ComponentType m_component_type;
         size_t m_num_components;
@@ -78,7 +79,7 @@ namespace rge
         float m_ao;
     };
 
-    enum AttributeType
+    enum AttribType
     {
         POSITION,
         NORMAL,
@@ -96,8 +97,8 @@ namespace rge
     {
         Material* m_material;
 
-        Buffer* m_attributes[AttributeType::Count];
-        Buffer* m_indices;
+        AccessorBuffer* m_attributes[AttribType::Count];
+        AccessorBuffer* m_indices;
     };
 
     struct Node
@@ -111,6 +112,15 @@ namespace rge
         float m_rotation[3];
         float m_scale[3];
 
+        float m_local_transform[16];
+        float m_world_transform[16];
+
         std::vector<Node*> m_children;
+
+        bool is_orphan();
+        bool is_parent();
+
+        void traverse(std::function<void(Node* node)> on_node);
+        void traverse_const(std::function<void(Node const* node)> on_node) const;
     };
 }

@@ -13,12 +13,12 @@ using namespace rge;
 
 // TODO load using a more lightweight loader (tinygltf heavily uses C++ stl).
 
-Buffer* GltfSceneLoader::create_buffer_from_accessor(tinygltf::Model& gltf_model, int accessor_idx)
+AccessorBuffer* GltfSceneLoader::create_buffer_from_accessor(tinygltf::Model& gltf_model, int accessor_idx)
 {
     if (m_buffer_by_accessor_idx.contains(accessor_idx))
         return m_buffer_by_accessor_idx.at(accessor_idx);
 
-    Buffer* result = new Buffer();
+    AccessorBuffer* result = new AccessorBuffer();
 
     tinygltf::Accessor& gltf_accessor = gltf_model.accessors[accessor_idx];
 
@@ -61,8 +61,6 @@ Material* GltfSceneLoader::load_material(tinygltf::Model& gltf_model, int materi
 
     tinygltf::Material& gltf_material = gltf_model.materials[material_idx];
 
-    // TODO material
-
     m_material_by_idx.insert({ material_idx, result });
 
     return result;
@@ -83,16 +81,16 @@ Mesh* GltfSceneLoader::load_mesh(tinygltf::Model& gltf_model, int mesh_idx)
 
     for (auto [attrib_name, accessor_idx] : gltf_primitive.attributes)
     {
-        AttributeType attrib_type;
+        AttribType attrib_type;
 
-        if      (attrib_name == "POSITION")   attrib_type = AttributeType::POSITION;
-        else if (attrib_name == "NORMAL")     attrib_type = AttributeType::NORMAL;
-        else if (attrib_name == "TANGENT")    attrib_type = AttributeType::TANGENT;
-        else if (attrib_name == "TEXCOORD_0") attrib_type = AttributeType::TEXCOORD_0;
-        else if (attrib_name == "TEXCOORD_1") attrib_type = AttributeType::TEXCOORD_1;
-        else if (attrib_name == "COLOR_0")    attrib_type = AttributeType::COLOR_0;
-        else if (attrib_name == "JOINTS_0")   attrib_type = AttributeType::JOINTS_0;
-        else if (attrib_name == "WEIGHTS_0")  attrib_type = AttributeType::WEIGHTS_0;
+        if      (attrib_name == "POSITION")   attrib_type = AttribType::POSITION;
+        else if (attrib_name == "NORMAL")     attrib_type = AttribType::NORMAL;
+        else if (attrib_name == "TANGENT")    attrib_type = AttribType::TANGENT;
+        else if (attrib_name == "TEXCOORD_0") attrib_type = AttribType::TEXCOORD_0;
+        else if (attrib_name == "TEXCOORD_1") attrib_type = AttribType::TEXCOORD_1;
+        else if (attrib_name == "COLOR_0")    attrib_type = AttribType::COLOR_0;
+        else if (attrib_name == "JOINTS_0")   attrib_type = AttribType::JOINTS_0;
+        else if (attrib_name == "WEIGHTS_0")  attrib_type = AttribType::WEIGHTS_0;
         else
         {
             printf("Invalid attribute name: %s\n", attrib_name.c_str());
@@ -186,9 +184,7 @@ Node* GltfSceneLoader::load(tinygltf::Model& gltf_model)
 
 Node* GltfSceneLoader::load_from_resource(char const* path)
 {
-    size_t size = ResourceProvider::request(path, NULL);
-
-    std::vector<uint8_t> buffer(size);
+    std::vector<uint8_t> buffer;
     ResourceProvider::request(path, buffer);
 
     tinygltf::TinyGLTF gltf_loader;

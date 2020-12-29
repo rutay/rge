@@ -1,7 +1,7 @@
-
-
 $input a_position, a_color0, a_normal, i_data0, i_data1, i_data2, i_data3
 $output v_position, v_color0, v_normal
+
+#include <bgfx_shader.sh>
 
 void main()
 {

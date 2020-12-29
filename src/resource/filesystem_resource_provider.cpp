@@ -1,18 +1,18 @@
-#if !defined(__EMSCRIPTEN__)
+#ifndef __EMSCRIPTEN__
 
 #include "resource_provider.hpp"
 
 #include <fstream>
 #include <iostream>
 
-size_t ResourceProvider::request(char const* path, uint8_t* buffer)
+size_t ResourceProvider::__request_impl(char const* path, uint8_t* buffer)
 {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
 
     if (!file.is_open())
     {
         std::cerr << "Resource not found: " << path << std::endl;
-        throw;
+        return 0;
     }
     
     std::streamsize size = file.tellg();
@@ -22,11 +22,6 @@ size_t ResourceProvider::request(char const* path, uint8_t* buffer)
         file.read(reinterpret_cast<char*>(buffer), size);
 
     return size;
-}
-
-size_t ResourceProvider::request(char const* path, std::vector<uint8_t>& buffer)
-{
-    return ResourceProvider::request(path, buffer.data());
 }
 
 #endif

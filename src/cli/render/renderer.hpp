@@ -24,13 +24,15 @@ namespace rge
     struct Renderer_DrawMeshCommand
     {
         static bgfx::ProgramHandle s_program;
+        static bgfx::UniformHandle s_material_data0_uniform;
+        static bgfx::UniformHandle s_material_data1_uniform;
 
         bgfx::VertexBufferHandle m_instance_buffer;
 
         std::vector<bgfx::VertexBufferHandle> m_vertex_buffers;
         bgfx::IndexBufferHandle m_index_buffer;
 
-        void run(bgfx::ViewId view_id);
+        void run(bgfx::ViewId view_id, Camera const& camera);
         void destroy();
 
         static void init_program();
@@ -71,7 +73,7 @@ namespace rge
         void rebuild_draw_mesh_commands();
         void rebuild(Node const* scene_graph);
 
-        void render(bgfx::ViewId view_id);
+        void render(bgfx::ViewId view_id, Camera const& camera);
     };
 
     struct Renderer
@@ -81,6 +83,6 @@ namespace rge
         Renderer();
         ~Renderer();
 
-        void render(bgfx::ViewId view_id, Node* scene_graph, Camera* camera);
+        void render(bgfx::ViewId view_id, Node* scene_graph, Camera const& camera);
     };
 }

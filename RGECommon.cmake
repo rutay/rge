@@ -31,39 +31,37 @@ set(CMAKE_CXX_STANDARD 20)
 
 if (NOT EMSCRIPTEN) # If it's not emscripten, then it's desktop.
 	set(IS_HOST_PLATFORM TRUE)
-	set(USE_GLFW TRUE)
 endif()
 
 set(BUILD_CLIENT TRUE)
 add_compile_definitions(BUILD_CLIENT)
 
 set(RGE_SRCS
-	"src/resource/filesystem_resource_provider.cpp"
-	"src/resource/http_resource_provider.cpp"
-	"src/resource/resource_provider.cpp"
-	"src/resource/resource_provider.hpp"
-	"src/cli/boot_glfw.cpp"
-	"src/server/main.cpp"
-	"src/cli/render/camera.hpp"
-	"src/cli/render/camera.cpp"
-	"src/cli/render/renderer.cpp"
-	"src/cli/render/renderer.hpp"
+	#"src/resource/filesystem_resource_provider.cpp"
+	#"src/resource/http_resource_provider.cpp"
+	#"src/resource/resource_provider.cpp"
+	#"src/resource/resource_provider.hpp"
+	#"src/server/main.cpp"
+	#"src/cli/render/camera.hpp"
+	#"src/cli/render/camera.cpp"
+	#"src/cli/render/renderer.cpp"
+	#"src/cli/render/renderer.hpp"
 
-	# Booter
+	# Boot
 	"src/cli/boot.hpp"
-	"src/cli/boot_html5.cpp"
+	"src/cli/boot.cpp"
 
 	# Game
 	"src/cli/game.hpp"
 	"src/cli/game.cpp"
 
 	# Scene
-	"src/scene/scene.hpp"
-	"src/scene/scene.cpp"
+	#"src/scene/scene.hpp"
+	#"src/scene/scene.cpp"
 
-	"src/scene/gltf_scene_loader.hpp"
-	"src/scene/gltf_scene_loader.cpp"
-	"src/packet.hpp"
+	#"src/scene/gltf_scene_loader.hpp"
+	#"src/scene/gltf_scene_loader.cpp"
+	#"src/packet.hpp"
 )
 
 set(RGE_INCLUDE_DIR "src")
@@ -85,8 +83,9 @@ rge_log(STATUS "Loading third-part dependencies")
 
 set(RGE_THIRD_PARTY_DIR "third_party")
 
+# ----------------------------------------------------------------
 # Bullet3
-# Ref: https://github.com/bulletphysics/bullet3/blob/master/CMakeLists.txt
+# ----------------------------------------------------------------
 
 rge_log(STATUS "Loading Bullet3")
 
@@ -106,7 +105,10 @@ add_subdirectory("${RGE_HOME}/${BULLET_DIR}" ${BULLET_DIR})
 set(BULLET_INCLUDE_DIR "${BULLET_DIR}/src")
 set(BULLET_LIBS LinearMath Bullet3Common BulletInverseDynamics BulletCollision BulletDynamics BulletSoftBody)
 
+# ----------------------------------------------------------------
 # bgfx
+# ----------------------------------------------------------------
+
 rge_log(STATUS "Loading BGFX")
 
 set(BGFX_CMAKE_DIR "${RGE_THIRD_PARTY_DIR}/bgfx.cmake")
@@ -129,7 +131,10 @@ set(BIMG_INCLUDE_DIR        "${BGFX_CMAKE_DIR}/bimg/include")
 set(BGFX_INCLUDE_DIRS "${BGFX_INCLUDE_DIR} ${BGFX_SHADER_INCLUDE_DIR} ${BX_INCLUDE_DIR} ${BIMG_INCLUDE_DIR}")
 set(BGFX_LIBS bgfx)
 
+# ----------------------------------------------------------------
 # tinygltf
+# ----------------------------------------------------------------
+
 rge_log(STATUS "Loading TinyGLTF")
 
 set(TINYGLTF_DIR "${RGE_THIRD_PARTY_DIR}/tinygltf")
@@ -142,25 +147,18 @@ add_subdirectory("${RGE_HOME}/${TINYGLTF_DIR}" ${TINYGLTF_DIR})
 
 set(TINYGLTF_INCLUDE_DIR ${TINYGLTF_DIR})
 
-# GLFW
-# Ref: https://www.glfw.org/docs/3.3/build_guide.html
+# ----------------------------------------------------------------
+# SDL2
+# ----------------------------------------------------------------
 
-if (USE_GLFW)
-	rge_log(STATUS "Loading GLFW")
+rge_log(STATUS "Loading SDL2")
 
-	add_compile_definitions(USE_GLFW)
+set(SDL2_DIR "${RGE_THIRD_PARTY_DIR}/sdl2")
 
-	set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-	set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-	set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory("${RGE_HOME}/${SDL2_DIR}" ${SDL2_DIR})
 
-	set(GLFW_DIR "${RGE_THIRD_PARTY_DIR}/glfw")
-
-	add_subdirectory("${RGE_HOME}/${GLFW_DIR}" ${GLFW_DIR})
-
-	set(GLFW_INCLUDE_DIRS "${GLFW_DIR}/include")
-	set(GLFW_LIBS glfw)
-endif()
+set(SDL2_INCLUDE_DIR "${SDL2_DIR}/include")
+set(SDL2_LIBS SDL2main SDL2-static)
 
 # ------------------------------------------------------------------------------------------------
 # Assets
@@ -199,8 +197,8 @@ function (rge_compile_shader SHADERS_VAR SHADER_NAME SHADER_TYPE VARYING_DEF_NAM
 	add_custom_command(
 		OUTPUT ${SHADER_DST}
 		COMMAND $<TARGET_FILE:shaderc> -f ${SHADER_SRC} -i "${RGE_HOME}/${BGFX_SHADER_INCLUDE_DIR}" --type ${SHADER_TYPE} --varyingdef ${VARYING_DEF_SRC} -o ${SHADER_DST}
-		DEPENDS shaderc
-		MAIN_DEPENDENCY ${SHADER_SRC} ${VARYING_DEF_SRC}
+		MAIN_DEPENDENCY ${SHADER_SRC}
+		DEPENDS shaderc ${VARYING_DEF_SRC}
 		COMMENT "Compiling shader using shaderc: ${SHADER_NAME} (${SHADER_TYPE})"
 	)
 
@@ -301,10 +299,9 @@ function (rge_define_game GAME_NAME SRCS SHADERS)
 		target_include_directories(${GAME_NAME} PUBLIC ${BGFX_INCLUDE_DIRS_ABS})
 		target_link_libraries(${GAME_NAME} ${BGFX_LIBS})
 
-		if (USE_GLFW)
-			# GLFW
-			target_include_directories(${GAME_NAME} PUBLIC "${RGE_HOME}/${GLFW_INCLUDE_DIRS}")
-			target_link_libraries(${GAME_NAME} ${GLFW_LIBS})
-		endif()
+		# SDL2
+		target_include_directories(${GAME_NAME} PUBLIC "${RGE_HOME}/${SDL2_INCLUDE_DIR}")
+		target_link_libraries(${GAME_NAME} ${SDL2_LIBS})
+
 	endif()
 endfunction()

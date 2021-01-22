@@ -10,8 +10,10 @@ uniform vec4 u_material_data1;
 
 void main()
 {
-	gl_FragData[0] = vec4(v_position, 1.0);
-	gl_FragData[1] = vec4(v_normal, 1.0);
-	gl_FragData[2] = u_material_data0;
-	gl_FragData[3] = u_material_data1;
+	//gl_FragData[0] = vec4(v_position, 1.0);
+	//gl_FragData[1] = vec4(v_normal, 1.0);
+	//gl_FragData[2] = u_material_data0;
+	//gl_FragData[3] = u_material_data1;
+
+	gl_FragColor = vec4(1, 0, 0, 1);
 }

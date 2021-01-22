@@ -1,5 +1,5 @@
-$input a_position, a_color0, a_normal, i_data0, i_data1, i_data2, i_data3
-$output v_position, v_color0, v_normal
+$input a_position, a_normal, i_data0, i_data1, i_data2, i_data3
+$output v_position, v_normal
 
 #include <bgfx_shader.sh>
 
@@ -15,6 +15,5 @@ void main()
 	gl_Position = mul(u_viewProj, worldPos);
 
 	v_position = a_position;
-	v_color0 = a_color0;
 	v_normal = a_normal;
 }

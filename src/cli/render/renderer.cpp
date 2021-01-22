@@ -50,8 +50,10 @@ Renderer::~Renderer()
 // ------------------------------------------------------------------------------------------------ Renderer_DrawMeshCommand
 
 bgfx::ProgramHandle Renderer_DrawMeshCommand::s_program = BGFX_INVALID_HANDLE;
+bgfx::UniformHandle Renderer_DrawMeshCommand::s_material_data0_uniform = BGFX_INVALID_HANDLE;
+bgfx::UniformHandle Renderer_DrawMeshCommand::s_material_data1_uniform = BGFX_INVALID_HANDLE;
 
-void Renderer_DrawMeshCommand::run(bgfx::ViewId view_id)
+void Renderer_DrawMeshCommand::run(bgfx::ViewId view_id, Camera const& camera)
 {
     bgfx::setInstanceDataBuffer(m_instance_buffer, 0, 0);
     for (uint8_t stream_i = 0; stream_i < m_vertex_buffers.size(); stream_i++)
@@ -59,6 +61,15 @@ void Renderer_DrawMeshCommand::run(bgfx::ViewId view_id)
     bgfx::setIndexBuffer(m_index_buffer);
 
     bgfx::submit(view_id, Renderer_DrawMeshCommand::s_program);
+
+    float camera_view[16], camera_proj[16];
+    camera.view(camera_view);
+    camera.projection(camera_proj);
+    bgfx::setViewTransform(view_id, camera_view, camera_proj);
+
+    float material_data[4] = {0, 0, 0, 0}; // TODO
+    bgfx::setUniform(s_material_data0_uniform, material_data);
+    bgfx::setUniform(s_material_data1_uniform, material_data);
 }
 
 void Renderer_DrawMeshCommand::destroy()
@@ -169,6 +180,9 @@ void Renderer_DrawMeshCommand::init_program()
         bgfx_load_shader(f_shader, RGE_asset("assets/cli/shaders/draw_mesh_fs.bin"));
 
         s_program = bgfx::createProgram(v_shader, f_shader);
+
+        s_material_data0_uniform = bgfx::createUniform("u_material_data0", bgfx::UniformType::Vec4);
+        s_material_data1_uniform = bgfx::createUniform("u_material_data1", bgfx::UniformType::Vec4);
     }
 }
 
@@ -283,17 +297,17 @@ void Renderer_SceneGraphCache::rebuild(Node const* scene_graph)
     rebuild_draw_mesh_commands();
 }
 
-void Renderer_SceneGraphCache::render(bgfx::ViewId view_id)
+void Renderer_SceneGraphCache::render(bgfx::ViewId view_id, Camera const& camera)
 {
     for (Renderer_DrawMeshCommand& draw_mesh_cmd : m_draw_mesh_commands)
     {
-        draw_mesh_cmd.run(view_id);
+        draw_mesh_cmd.run(view_id, camera);
     }
 }
 
 // ------------------------------------------------------------------------------------------------ Renderer
 
-void Renderer::render(bgfx::ViewId view_id, Node* scene_graph, Camera* camera)
+void Renderer::render(bgfx::ViewId view_id, Node* scene_graph, Camera const& camera)
 {
     if (!m_cache_by_scene_graph.contains(scene_graph))
     {
@@ -302,5 +316,5 @@ void Renderer::render(bgfx::ViewId view_id, Node* scene_graph, Camera* camera)
         m_cache_by_scene_graph.insert({ scene_graph, cache });
     }
 
-    m_cache_by_scene_graph.at(scene_graph).render(view_id);
+    m_cache_by_scene_graph.at(scene_graph).render(view_id, camera);
 }

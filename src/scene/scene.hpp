@@ -4,8 +4,9 @@
 #include <memory>
 #include <unordered_map>
 #include <functional>
+#include <optional>
+#include <array>
 
-#include <bx/math.h>
 #include <bgfx/bgfx.h>
 
 namespace rge
@@ -107,22 +108,27 @@ namespace rge
 
     struct Node
     {
-        Node* m_parent;
+    	Node();
+
+    	Node* m_parent;
 
         Mesh* m_mesh;
         Light* m_light;
 
-        float m_position[3];
-        float m_rotation[3];
-        float m_scale[3];
+		float m_rotation[4];
+		float m_position[3];
+		float m_scale[3];
 
-        float m_local_transform[16];
-        float m_world_transform[16];
+		float m_local_transform[16];
+		float m_world_transform[16];
+
+        void update_local_transform();
+        void update_world_transform();
 
         std::vector<Node*> m_children;
 
-        bool is_orphan();
-        bool is_parent();
+        bool is_orphan() const;
+        bool is_parent() const;
 
         void traverse(std::function<void(Node* node)> on_node);
         void traverse_const(std::function<void(Node const* node)> on_node) const;

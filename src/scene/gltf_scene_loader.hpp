@@ -26,7 +26,6 @@ namespace rge
         void print_cache();
 
         Node* load(tinygltf::Model& gltf_model);
-
         Node* load_from_resource(char const* path);
     };
 }

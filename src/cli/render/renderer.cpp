@@ -55,17 +55,20 @@ bgfx::UniformHandle Renderer_DrawMeshCommand::s_material_data1_uniform = BGFX_IN
 
 void Renderer_DrawMeshCommand::run(bgfx::ViewId view_id, Camera const& camera)
 {
-    bgfx::setInstanceDataBuffer(m_instance_buffer, 0, 0);
-    for (uint8_t stream_i = 0; stream_i < m_vertex_buffers.size(); stream_i++)
-        bgfx::setVertexBuffer(stream_i, m_vertex_buffers[stream_i]);
+    for (int stream = 0; stream < m_vertex_buffers.size(); stream++)
+        bgfx::setVertexBuffer(stream, m_vertex_buffers[stream]);
     bgfx::setIndexBuffer(m_index_buffer);
 
-    bgfx::submit(view_id, Renderer_DrawMeshCommand::s_program);
+	bgfx::setInstanceDataBuffer(m_instance_buffer, 0, m_instances_count);
 
     float camera_view[16], camera_proj[16];
     camera.view(camera_view);
     camera.projection(camera_proj);
     bgfx::setViewTransform(view_id, camera_view, camera_proj);
+
+	bgfx::setState(BGFX_STATE_DEFAULT);
+
+	bgfx::submit(view_id, Renderer_DrawMeshCommand::s_program);
 
     float material_data[4] = {0, 0, 0, 0}; // TODO
     bgfx::setUniform(s_material_data0_uniform, material_data);
@@ -148,7 +151,15 @@ bool bgfx_allocate_vbo_from_attrib_accessor(bgfx::VertexBufferHandle& result, rg
 bool bgfx_allocate_ibo_from_accessor(bgfx::IndexBufferHandle& result, AccessorBuffer const* accessor)
 {
     bgfx::Memory const* memory = bgfx_copy_memory_from_accessor_buffer(accessor);
-    result = bgfx::createIndexBuffer(memory, BGFX_BUFFER_INDEX32);
+
+    uint16_t indices_type;
+    if    (accessor->m_component_type == rge::ComponentType::UNSIGNED_SHORT) indices_type = BGFX_BUFFER_NONE;
+    else if (accessor->m_component_type == rge::ComponentType::UNSIGNED_INT) indices_type = BGFX_BUFFER_INDEX32;
+    else {
+    	printf("Couldn't match the requested IBO component type: %d.", accessor->m_component_type);
+    	return false;
+    }
+    result = bgfx::createIndexBuffer(memory, indices_type);
     return true;
 }
 
@@ -175,7 +186,7 @@ void Renderer_DrawMeshCommand::init_program()
     {
         printf("Initializing draw_mesh program\n");
 
-        bgfx::ShaderHandle v_shader, f_shader;
+        bgfx::ShaderHandle v_shader{}, f_shader{};
         bgfx_load_shader(v_shader, RGE_asset("assets/cli/shaders/simple_inst_vs.bin"));
         bgfx_load_shader(f_shader, RGE_asset("assets/cli/shaders/draw_mesh_fs.bin"));
 
@@ -193,20 +204,22 @@ void Renderer_DrawMeshCommand::create(Renderer_DrawMeshCommand& command, Mesh co
         AccessorBuffer* attrib_accessor = mesh->m_attributes[attrib_type];
         if (attrib_accessor)
         {
-            bgfx::VertexBufferHandle vbo;
+            bgfx::VertexBufferHandle vbo{};
             if (!bgfx_allocate_vbo_from_attrib_accessor(vbo, static_cast<rge::AttribType>(attrib_type), attrib_accessor))
             {
                 printf("Failed to initialize VBO for attrib: %d\n", attrib_type);
                 continue;
             }
             command.m_vertex_buffers.push_back(vbo);
+
+			printf("Allocated data for attrib %d\n", attrib_type);
         }
     }
 
     AccessorBuffer* indices_accessor = mesh->m_indices;
     if (indices_accessor)
     {
-        bgfx::IndexBufferHandle ibo;
+        bgfx::IndexBufferHandle ibo{};
         if (!bgfx_allocate_ibo_from_accessor(ibo, indices_accessor))
         {
             printf("Failed to initialize IBO\n");
@@ -219,9 +232,10 @@ void Renderer_DrawMeshCommand::create(Renderer_DrawMeshCommand& command, Mesh co
         printf("Mesh without IBO? Weird...\n");
     }
 
-    bgfx::VertexBufferHandle idb;
+    bgfx::VertexBufferHandle idb{};
     bgfx_allocate_idb_from_nodes(idb, nodes);
     command.m_instance_buffer = idb;
+    command.m_instances_count = nodes.size();
 }
 
 // ------------------------------------------------------------------------------------------------ Renderer_CreateShadowMapCommand
@@ -285,6 +299,7 @@ void Renderer_SceneGraphCache::rebuild_draw_mesh_commands()
             Renderer_DrawMeshCommand::create(draw_mesh_cmd, mesh, nodes);
             m_draw_mesh_commands.push_back(draw_mesh_cmd);
 
+			printf("Mesh with %llu nodes allocated\n", nodes.size());
         }
     }
 }

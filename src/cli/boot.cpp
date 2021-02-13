@@ -4,6 +4,7 @@
 
 #include <SDL.h>
 #include <SDL_syswm.h>
+
 #include <bgfx/platform.h>
 
 #include "game.hpp"

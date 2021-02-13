@@ -9,6 +9,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <tiny_gltf.h>
 
+#include <bx/math.h>
+
 using namespace rge;
 
 // TODO load using a more lightweight loader (tinygltf heavily uses C++ stl).
@@ -119,18 +121,40 @@ Node* GltfSceneLoader::load_node(tinygltf::Model& gltf_model, int node_idx, Node
     tinygltf::Node& gltf_node = gltf_model.nodes[node_idx];
 
     int mesh_idx = gltf_node.mesh;
-    result->m_mesh = mesh_idx >= 0 ? load_mesh(gltf_model, mesh_idx) : NULL;
+    result->m_mesh = mesh_idx >= 0 ? load_mesh(gltf_model, mesh_idx) : nullptr;
 
-    // TODO light
+	if (!gltf_node.translation.empty()) {
+		for (int i = 0; i < 3; i++) {
+			result->m_position[i] = (float) gltf_node.translation[i];
+		}
+	}
+
+	if (!gltf_node.rotation.empty()) {
+		for (int i = 0; i < 4; i++) {
+			result->m_rotation[i] = (float) gltf_node.rotation[i];
+		}
+	}
+
+    if (!gltf_node.scale.empty()) {
+		for (int i = 0; i < 3; i++) {
+			result->m_scale[i] = (float) gltf_node.scale[i];
+		}
+    }
+
+	result->update_local_transform();
+
+	if (parent)
+	{
+		result->m_parent = parent;
+		parent->m_children.push_back(result);
+
+		result->update_world_transform();
+	}
+
+	// TODO light
 
     for (int child_node_idx : gltf_node.children)
         load_node(gltf_model, child_node_idx, result);
-
-    if (parent)
-    {
-        result->m_parent = parent;
-        parent->m_children.push_back(result);
-    }
 
     m_node_by_idx.insert({ node_idx, result });
 

@@ -28,6 +28,7 @@ namespace rge
         static bgfx::UniformHandle s_material_data1_uniform;
 
         bgfx::VertexBufferHandle m_instance_buffer;
+        size_t m_instances_count;
 
         std::vector<bgfx::VertexBufferHandle> m_vertex_buffers;
         bgfx::IndexBufferHandle m_index_buffer;

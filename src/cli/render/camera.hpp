@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bx/math.h>
+#include <SDL.h>
 
 namespace rge
 {
@@ -32,9 +33,37 @@ namespace rge
         void matrix(float dest[16]) const;
     };
 
-    struct FreeCameraController
-    {
-        float m_last_cursor_x, m_last_cursor_y;
-        float m_camera_rotation_speed;
-    };
+    // ------------------------------------------------------------------------------------------------
+    // Controller
+	// ------------------------------------------------------------------------------------------------
+
+	struct Camera_Movement_KeyboardController
+	{
+		struct Action
+		{
+			SDL_Keycode const m_key;
+			bool m_pressed;
+		};
+
+		float m_speed = 1.0f;
+
+		Action m_forward  = { SDLK_w, false };
+		Action m_backward = { SDLK_s, false };
+		Action m_left     = { SDLK_a, false };
+		Action m_right    = { SDLK_d, false };
+		Action m_up       = { SDLK_SPACE, false };
+		Action m_down     = { SDLK_LSHIFT, false };
+
+		void update(Camera& camera, float delta) const;
+
+		void on_sdl_event(SDL_Event& event);
+	};
+
+	struct Camera_Orientation_MouseController
+	{
+		float m_yaw_speed   = bx::kPi / 10; // rad/pixel
+		float m_pitch_speed = bx::kPi / 10; // rad/pixel
+
+		void on_sdl_event(Camera& camera, SDL_Event& event) const;
+	};
 }

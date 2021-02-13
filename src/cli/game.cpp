@@ -9,7 +9,7 @@ using namespace rge;
 void Game::init()
 {
 	bgfx::Init init;
-	init.type = bgfx::RendererType::OpenGL;
+ 	init.type = bgfx::RendererType::OpenGL;
 	init.vendorId = BGFX_PCI_ID_NONE;
 	init.resolution.width = m_width;
 	init.resolution.height = m_height;
@@ -17,14 +17,16 @@ void Game::init()
 
 	bgfx::init(init);
 
-	bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0xff0000ff, 1.0f, 0);
+	bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x0000ff00, 1.0f, 0);
+
+	auto render_type = bgfx::getRendererType();
 
 	on_init();
 }
 
 void Game::notify_sdl_event(SDL_Event &event)
 {
-	if (event.type == SDL_QUIT) {
+	if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
 		m_should_close = true;
 	}
 	on_sdl_event(event);

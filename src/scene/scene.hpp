@@ -65,6 +65,16 @@ struct Accessor
 	size_t m_count;
 
 	bool m_normalized;
+
+	inline size_t get_value_byte_size() const
+	{
+		return ComponentType_byte_size(m_component_type) * m_num_components;
+	}
+
+	inline size_t get_stride() const
+	{
+		return m_buffer_view->m_byte_stride > 0 ? m_buffer_view->m_byte_stride : get_value_byte_size();
+	}
 };
 
 enum class LightType

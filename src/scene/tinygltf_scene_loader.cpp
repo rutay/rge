@@ -60,11 +60,11 @@ Accessor* SceneLoader_tinygltf::load_accessor(tinygltf::Model const& gltf_model,
 
 	Accessor* accessor = new Accessor();
 	accessor->m_component_type = static_cast<ComponentType>(gltf_accessor.componentType);
+	accessor->m_num_components = tinygltf::GetNumComponentsInType(gltf_accessor.type);
 	accessor->m_normalized = gltf_accessor.normalized;
 	accessor->m_byte_offset = gltf_accessor.byteOffset;
 	accessor->m_count = gltf_accessor.count;
-	accessor->m_normalized = gltf_accessor.normalized;
-	//accessor->m_type = static_cast<Type>(gltf_accessor.type);
+	accessor->m_normalized = gltf_accessor.normalized;;
 
 	if (gltf_accessor.bufferView >= 0) {
 		accessor->m_buffer_view = load_buffer_view(gltf_model, gltf_accessor.bufferView);
@@ -80,7 +80,9 @@ Material* SceneLoader_tinygltf::load_material(tinygltf::Model const& gltf_model,
 	if (m_material_by_idx.contains(material_idx))
 		return m_material_by_idx.at(material_idx);
 
-	Material* material = new BasicMaterial(); // todo
+	BasicMaterial* material = new BasicMaterial(); // todo
+	material->m_color[0] = 1.0f;
+	material->m_color[3] = 1.0f;
 
 	tinygltf::Material const& gltf_material = gltf_model.materials[material_idx];
 

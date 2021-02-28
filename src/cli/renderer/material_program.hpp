@@ -19,7 +19,7 @@ public:
 	virtual void init() = 0;
 
 	virtual void set_material(Material const* material) const = 0;
-	void run(bgfx::ViewId view_id) const;
+	void run(bgfx::ViewId view_id, uint32_t depth = 0, uint8_t flags = BGFX_DISCARD_ALL) const;
 };
 
 //

@@ -23,9 +23,9 @@ void load_shader(bgfx::ShaderHandle& shader, char const* src_path)
 // MaterialProgram
 // ------------------------------------------------------------------------------------------------
 
-void MaterialProgram::run(bgfx::ViewId view_id) const
+void MaterialProgram::run(bgfx::ViewId view_id, uint32_t depth, uint8_t flags) const
 {
-	bgfx::submit(view_id, m_program);
+	bgfx::submit(view_id, m_program, depth, flags);
 }
 
 // ------------------------------------------------------------------------------------------------

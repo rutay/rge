@@ -48,6 +48,16 @@ void bake_instance_data(bgfxRenderer::InstanceData& instance_data, std::vector<N
 	instance_data.m_count = nodes.size();
 }
 
+bgfx::Memory const* bgfx_memory_reference_from_accessor(Accessor const* accessor)
+{
+	BufferView const* buffer_view = accessor->m_buffer_view;
+
+	uint8_t* data = static_cast<unsigned char*>(buffer_view->m_buffer->m_data) + accessor->m_byte_offset + buffer_view->m_byte_offset;
+	size_t size = buffer_view->m_byte_length - accessor->m_byte_offset;
+
+	return bgfx::makeRef(data, size);
+}
+
 void bake_geometry(bgfxRenderer::BakedGeometry& baked_geometry, Geometry const* geometry)
 {
 	printf("Baking geometry %p\n", geometry);
@@ -59,20 +69,18 @@ void bake_geometry(bgfxRenderer::BakedGeometry& baked_geometry, Geometry const* 
 		{
 			printf("Creating VBO for attrib type: %d\n", attrib_type);
 
-			BufferView const* buffer_view = accessor->m_buffer_view;
+			bgfx::Attrib::Enum     bgfx_attr_type = bgfx_parse_attrib_type(static_cast<AttribType>(attrib_type));
+			bgfx::AttribType::Enum bgfx_comp_type = bgfx_parse_component_type(accessor->m_component_type);
+			size_t bytes_to_skip = accessor->get_stride() - accessor->get_value_byte_size();
 
 			bgfx::VertexLayout vertex_layout;
 			vertex_layout
 				.begin()
-				.add(bgfx_parse_attrib_type(static_cast<AttribType>(attrib_type)), accessor->m_num_components, bgfx_parse_component_type(accessor->m_component_type))
-				.skip(buffer_view->m_byte_stride)
+				.add(bgfx_attr_type, accessor->m_num_components, bgfx_comp_type)
+				.skip(bytes_to_skip)
 				.end();
 
-			size_t byte_offset = buffer_view->m_byte_offset + accessor->m_byte_offset;
-			bgfx::Memory const* bgfx_memory = bgfx::makeRef(
-				static_cast<unsigned char*>(buffer_view->m_buffer->m_data) + byte_offset,
-				buffer_view->m_byte_length - byte_offset
-			);
+			bgfx::Memory const* bgfx_memory = bgfx_memory_reference_from_accessor(accessor);
 			bgfx::VertexBufferHandle vbo = bgfx::createVertexBuffer(bgfx_memory, vertex_layout);
 			baked_geometry.m_vertex_buffers.push_back(vbo);
 		}
@@ -93,11 +101,7 @@ void bake_geometry(bgfxRenderer::BakedGeometry& baked_geometry, Geometry const* 
 			return; // todo throw error
 		}
 
-		size_t byte_offset = buffer_view->m_byte_offset + accessor->m_byte_offset;
-		bgfx::Memory const* bgfx_memory = bgfx::makeRef(
-			static_cast<unsigned char*>(accessor->m_buffer_view->m_buffer->m_data) + byte_offset,
-			buffer_view->m_byte_length - byte_offset
-		);
+		bgfx::Memory const* bgfx_memory = bgfx_memory_reference_from_accessor(accessor);
 		bgfx::IndexBufferHandle ibo = bgfx::createIndexBuffer(bgfx_memory, indices_type);
 		baked_geometry.m_index_buffer = ibo;
 	}

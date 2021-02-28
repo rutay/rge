@@ -2,11 +2,22 @@
 
 #include <bx/math.h>
 
-using namespace rge;
+using namespace rge::scene;
 
-size_t AccessorBuffer::get_data_size() const
+size_t rge::scene::ComponentType_byte_size(ComponentType component_type)
 {
-    return m_num_components * m_component_size;
+	switch (component_type)
+	{
+	case ComponentType::BYTE:           return sizeof(char);
+	case ComponentType::UNSIGNED_BYTE:  return sizeof(unsigned char);
+	case ComponentType::SHORT:          return sizeof(short);
+	case ComponentType::UNSIGNED_SHORT: return sizeof(unsigned short);
+	case ComponentType::FLOAT:          return sizeof(float);
+	case ComponentType::UNSIGNED_INT:   return sizeof(unsigned int);
+	default:
+		// todo errorrrr
+		return 0;
+	}
 }
 
 // ----------------------------------------------------------
@@ -14,7 +25,7 @@ size_t AccessorBuffer::get_data_size() const
 Node::Node() :
 	m_parent(nullptr),
 
-	m_mesh(nullptr),
+	m_meshes(),
 	m_light(nullptr),
 
 	m_position{0, 0, 0},

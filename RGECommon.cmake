@@ -37,15 +37,13 @@ set(BUILD_CLIENT TRUE)
 add_compile_definitions(BUILD_CLIENT)
 
 set(RGE_SRCS
-	"src/resource/filesystem_resource_provider.cpp"
-	"src/resource/http_resource_provider.cpp"
-	"src/resource/resource_provider.cpp"
-	"src/resource/resource_provider.hpp"
 	"src/server/main.cpp"
-	"src/cli/render/camera.hpp"
-	"src/cli/render/camera.cpp"
-	"src/cli/render/renderer.cpp"
-	"src/cli/render/renderer.hpp"
+	"src/cli/renderer/camera.hpp"
+	"src/cli/renderer/camera.cpp"
+	"src/cli/renderer/renderer.cpp"
+	"src/cli/renderer/renderer.hpp"
+	"src/cli/renderer/material_program.cpp"
+	"src/cli/renderer/material_program.hpp"
 
 	# Boot
 	"src/cli/boot.hpp"
@@ -58,9 +56,14 @@ set(RGE_SRCS
 	# Scene
 	"src/scene/scene.hpp"
 	"src/scene/scene.cpp"
+	"src/scene/material.hpp"
+    "src/scene/tinygltf_scene_loader.hpp"
+	"src/scene/tinygltf_scene_loader.cpp"
+	"src/scene/utils.hpp"
+	"src/scene/utils.cpp"
 
-	"src/scene/gltf_scene_loader.hpp"
-	"src/scene/gltf_scene_loader.cpp"
+	"src/resource_provider.hpp"
+	"src/resource_provider.cpp"
 	"src/packet.hpp"
 )
 
@@ -190,8 +193,7 @@ function (rge_compile_shader GAME_NAME SHADER_NAME SHADER_TYPE VARYING_DEF_NAME 
 
 	set(SHADERS_DST_DIR "${ASSETS_DST_DIR}/cli/shaders")
 
-	get_filename_component(SHADER_NAME_WLE ${SHADER_NAME} NAME_WLE)
-	set(SHADER_DST_NAME "${SHADER_NAME_WLE}.bin")
+	set(SHADER_DST_NAME "${SHADER_NAME}.bin")
 	set(SHADER_DST "${SHADERS_DST_DIR}/${SHADER_DST_NAME}")
 
 	add_custom_command(
@@ -201,7 +203,7 @@ function (rge_compile_shader GAME_NAME SHADER_NAME SHADER_TYPE VARYING_DEF_NAME 
 		COMMAND $<TARGET_FILE:shaderc> -f ${SHADER_SRC} -i "${RGE_HOME}/${BGFX_SHADER_INCLUDE_DIR}" --type ${SHADER_TYPE} --varyingdef ${VARYING_DEF_SRC} -o ${SHADER_DST}
 		MAIN_DEPENDENCY ${SHADER_SRC}
 		DEPENDS shaderc ${VARYING_DEF_SRC}
-		COMMENT "Compiling shader using shaderc: ${SHADER_NAME} (${SHADER_TYPE})"
+		COMMENT "Compiling: ${SHADER_SRC} (${SHADER_TYPE})"
 	)
 endfunction()
 
@@ -270,8 +272,8 @@ function (rge_define_game GAME_NAME SRCS SHADERS)
 	# Assets
 	# ----------------------------------------------------------------
 
-	rge_compile_shader(${GAME_NAME} "draw_mesh_fs.shader"   "f" "draw_mesh_def.shader" ${RGE_HOME} "$<TARGET_FILE_DIR:${GAME_NAME}>/.rge")
-	rge_compile_shader(${GAME_NAME} "simple_inst_vs.shader" "v" "draw_mesh_def.shader" ${RGE_HOME} "$<TARGET_FILE_DIR:${GAME_NAME}>/.rge")
+	rge_compile_shader(${GAME_NAME} "basic.fs" "f" "basic.def" ${RGE_HOME} "$<TARGET_FILE_DIR:${GAME_NAME}>/.rge")
+	rge_compile_shader(${GAME_NAME} "basic.vs" "v" "basic.def" ${RGE_HOME} "$<TARGET_FILE_DIR:${GAME_NAME}>/.rge")
 
 	#set(SHADERS_TARGET_NAME "${GAME_NAME}_shaders")
 	#add_custom_target(${SHADERS_TARGET_NAME} DEPENDS ${SHADERS})

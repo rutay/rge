@@ -1,5 +1,7 @@
 #include "game.hpp"
 
+#include "cli/renderer/material_program.hpp"
+
 #include <cstdio>
 
 #include <bgfx/bgfx.h>
@@ -18,6 +20,8 @@ void Game::init()
 	bgfx::init(init);
 
 	bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x0000ff00, 1.0f, 0);
+
+	rge::renderer::MaterialProgramRegistry::init();
 
 	auto render_type = bgfx::getRendererType();
 

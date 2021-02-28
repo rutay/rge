@@ -1,5 +1,7 @@
 #pragma once
 
+#include "material.hpp"
+
 #include <vector>
 #include <memory>
 #include <unordered_map>
@@ -9,128 +11,175 @@
 
 #include <bgfx/bgfx.h>
 
-namespace rge
+namespace rge::scene
 {
-    enum struct ComponentType
-    {
-        BYTE = 5120,
-        UNSIGNED_BYTE = 5121,
-        SHORT = 5122,
-        UNSIGNED_SHORT = 5123,
-        UNSIGNED_INT = 5125,
-        FLOAT = 5126
-    };
+enum class ComponentType
+{
+	BYTE = 5120,
+	UNSIGNED_BYTE = 5121,
+	SHORT = 5122,
+	UNSIGNED_SHORT = 5123,
+	UNSIGNED_INT = 5125,
+	FLOAT = 5126
+};
 
-    struct AccessorBuffer
-    {
-        ComponentType m_component_type;
-        size_t m_component_size;
-        size_t m_num_components;
+size_t ComponentType_byte_size(ComponentType component_type);
 
-        size_t m_count;
+enum class Type
+{
+	VEC2 = 2,
+	VEC3 = 3,
+	VEC4 = 4,
+	MAT2 = 32 + 2,
+	MAT3 = 32 + 3,
+	MAT4 = 32 + 4,
+	SCALAR = 64 + 1,
+	VECTOR = 64 + 4,
+	MATRIX = 64 + 16
+};
 
-        size_t m_stride;
-        std::vector<uint8_t> m_data;
+struct Buffer
+{
+	void* m_data;
+	size_t m_byte_length;
+};
 
-        bool m_normalized;
+struct BufferView
+{
+	Buffer* m_buffer;
 
-        size_t get_data_size() const;
-    };
+	size_t m_byte_offset;
+	size_t m_byte_length;
+	size_t m_byte_stride;
+};
 
-    enum class LightType
-    {
-        POINT,
-        DIRECTIONAL,
-        SPOT,
+struct Accessor
+{
+	BufferView* m_buffer_view;
 
-        Count
-    };
+	//Type m_type;
+	ComponentType m_component_type;
+	size_t m_num_components;
 
-    struct Light
-    {
-        LightType const m_type;
+	size_t m_byte_offset;
+	size_t m_count;
 
-        float color[3];
-        float intensity;
+	bool m_normalized;
+};
 
-        bool m_dirty;
+enum class LightType
+{
+	POINT,
+	DIRECTIONAL,
+	SPOT,
 
-    protected:
-        Light(LightType type) : m_type(type) {}
-    };
+	Count
+};
 
-    struct PointLight : public Light
-    {
-        PointLight() : Light(LightType::POINT) {}
-    };
+struct Light
+{
+	LightType const m_type;
 
-    struct DirectionalLight : public Light
-    {
-        DirectionalLight() : Light(LightType::DIRECTIONAL) {}
-    };
+	float color[3];
+	float intensity;
 
-    struct SpotLight : public Light
-    {
-        // TODO
+	bool m_dirty;
 
-        SpotLight() : Light(LightType::SPOT) {}
-    };
+protected:
+	Light(LightType type)
+		: m_type(type)
+	{}
+};
 
-    struct Material
-    {
-        float m_albedo[3];
-        float m_metallic;
-        float m_roughness;
-        float m_ao;
-    };
+struct PointLight: public Light
+{
+	PointLight()
+		: Light(LightType::POINT)
+	{}
+};
 
-    enum AttribType
-    {
-        POSITION,
-        NORMAL,
-        TANGENT,
-        TEXCOORD_0,
-        TEXCOORD_1,
-        COLOR_0,
-        JOINTS_0,
-        WEIGHTS_0,
+struct DirectionalLight: public Light
+{
+	DirectionalLight()
+		: Light(LightType::DIRECTIONAL)
+	{}
+};
 
-        Count
-    };
+struct SpotLight: public Light
+{
+	// TODO
 
-    struct Mesh
-    {
-        Material* m_material;
+	SpotLight()
+		: Light(LightType::SPOT)
+	{}
+};
 
-        AccessorBuffer* m_attributes[AttribType::Count];
-        AccessorBuffer* m_indices;
-    };
+enum class AttribType
+{
+	POSITION,
+	NORMAL,
+	TANGENT,
+	TEXCOORD_0,
+	TEXCOORD_1,
+	COLOR_0,
+	JOINTS_0,
+	WEIGHTS_0,
 
-    struct Node
-    {
-    	Node();
+	Count
+};
 
-    	Node* m_parent;
+enum class DrawMode
+{
+	POINTS,
+	LINES,
+	LINE_LOOP,
+	LINE_STRIP,
+	TRIANGLES,
+	TRIANGLE_STRIP,
+	TRIANGLE_FAN,
 
-        Mesh* m_mesh;
-        Light* m_light;
+	Count
+};
 
-		float m_rotation[4];
-		float m_position[3];
-		float m_scale[3];
+struct Geometry
+{
+	DrawMode m_mode;
 
-		float m_local_transform[16];
-		float m_world_transform[16];
+	Accessor* m_attributes[static_cast<size_t>(AttribType::Count)];
+	Accessor* m_indices;
+};
 
-        void update_local_transform();
-        void update_world_transform();
+struct Mesh
+{
+	Material* m_material;
+	Geometry* m_geometry;
+};
 
-        std::vector<Node*> m_children;
+struct Node
+{
+	Node();
 
-        bool is_orphan() const;
-        bool is_parent() const;
+	Node* m_parent;
 
-        void traverse(std::function<void(Node* node)> on_node);
-        void traverse_const(std::function<void(Node const* node)> on_node) const;
-    };
+	std::vector<Mesh*> m_meshes;
+	Light* m_light;
+
+	float m_rotation[4];
+	float m_position[3];
+	float m_scale[3];
+
+	float m_local_transform[16];
+	float m_world_transform[16];
+
+	void update_local_transform();
+	void update_world_transform();
+
+	std::vector<Node*> m_children;
+
+	bool is_orphan() const;
+	bool is_parent() const;
+
+	void traverse(std::function<void(Node* node)> on_node);
+	void traverse_const(std::function<void(Node const* node)> on_node) const;
+};
 }

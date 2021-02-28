@@ -139,9 +139,6 @@ void FreeCamera_OrientationMouseController::on_sdl_event(FreeCamera& camera, SDL
 	if (event.type == SDL_MOUSEMOTION) {
 		camera.rotate_yaw(event.motion.xrel * m_yaw_speed);
 		camera.rotate_pitch(-event.motion.yrel * m_pitch_speed);
-
-
-		printf("yaw=%f pitch=%f\n", camera.m_rotation[0], camera.m_rotation[1]);
 	}
 }
 

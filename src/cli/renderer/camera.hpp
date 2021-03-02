@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bx/math.h>
+#include <bx/util.h>
 #include <SDL.h>
 
 #include <optional>

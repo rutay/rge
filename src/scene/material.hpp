@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "util.hpp"
 
 namespace rge::scene
 {
@@ -24,24 +25,26 @@ struct BasicMaterial : public Material
 {
 	RGE_MATERIAL_DEFINITION;
 
-	float m_color[4] = { 0, 0, 0, 0 };
+	Vec4 m_color{ 0, 0, 0, 0 };
 };
 
+/*
 struct PhongMaterial : public Material
 {
 	RGE_MATERIAL_DEFINITION;
 
-	float m_ambient[3]  { 0, 0, 0 };
-	float m_diffuse[3]  { 0 ,0, 0 };
-	float m_specular[3] { 0, 0, 0 };
+	Vec3 m_ambient;
+	Vec3 m_diffuse;
+	Vec3 m_specular;
 	float m_shininess = 0;
 };
+ */
 
 struct PbrMaterial : public Material
 {
 	RGE_MATERIAL_DEFINITION;
 
-	float m_albedo[3];
+	Vec3  m_base_color;
 	float m_metallic;
 	float m_roughness;
 	float m_ao;

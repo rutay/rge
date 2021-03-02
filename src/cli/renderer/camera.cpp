@@ -11,8 +11,8 @@ Camera::Camera() :
 	m_scale{1, 1, 1},
 	m_fov(90.0f),
 	m_aspect_ratio(1.0f),
-	m_near_plane(0.1f),
-	m_far_plane(1000.0f)
+	m_near_plane(0.01f),
+	m_far_plane(100.0f)
 {}
 
 Camera::~Camera()

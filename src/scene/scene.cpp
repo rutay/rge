@@ -1,6 +1,6 @@
 #include "scene.hpp"
 
-#include <bx/math.h>
+#include <bx/util.h>
 
 using namespace rge::scene;
 
@@ -49,32 +49,48 @@ bool Node::is_parent() const
     return !m_children.empty();
 }
 
+void Node::update_position_rotation_scale_from_local_transform()
+{
+	m_position = {
+		.x = m_local_transform[12],
+		.y = m_local_transform[13],
+		.z = m_local_transform[14]
+	};
+	m_rotation = { }; // todo
+	m_scale = {
+		.x = m_local_transform[0],
+		.y = m_local_transform[5],
+		.z = m_local_transform[10]
+	};
+}
+
 void Node::update_local_transform()
 {
-	float tmp[16];
+	float scale_mtx[16];
+	float rot_mtx[16];
+	float translation_mtx[16];
 
-	bx::mtxIdentity(m_local_transform);
+	bx::mtxScale(scale_mtx, m_scale.x, m_scale.y, m_scale.z);
+	bx::mtxQuat(rot_mtx, bx::Quaternion{m_rotation.x, m_rotation.y, m_rotation.z, m_rotation.w});
+	bx::mtxTranslate(translation_mtx, m_position.x, m_position.y, m_position.z);
 
-	bx::mtxQuat(tmp, bx::Quaternion{m_rotation[0], m_rotation[1], m_rotation[2], m_rotation[3]});
-	bx::mtxMul(m_local_transform, tmp, m_local_transform);
-
-	bx::mtxScale(tmp, m_scale[0], m_scale[1], m_scale[2]);
-	bx::mtxMul(m_local_transform, tmp, m_local_transform);
-
-	bx::mtxTranslate(tmp, m_position[0], m_position[1], m_position[2]);
-	bx::mtxMul(m_local_transform, tmp, m_local_transform);
+	float rot_scale_mtx[16];
+	bx::mtxMul(rot_scale_mtx, rot_mtx, scale_mtx);
+	bx::mtxMul(m_local_transform, translation_mtx, rot_scale_mtx);
 }
 
 void Node::update_world_transform()
 {
-	bx::memCopy(m_world_transform, m_local_transform, 16 * sizeof(float));
+	bx::memCopy(m_world_transform, m_local_transform, sizeof(m_local_transform));
 
-	Node* node = this;
-	while (node != nullptr) {
-		// TODO (OPT) do not multiply if the parent's transform is an identity?
-		bx::mtxMul(m_world_transform, node->m_local_transform, m_world_transform);
+	Node* parent = m_parent;
+	while (parent != nullptr)
+	{
+		float world_transform_mtx[16];
+		bx::mtxMul(world_transform_mtx, m_world_transform, parent->m_local_transform);
+		bx::memCopy(m_world_transform, world_transform_mtx, sizeof(world_transform_mtx));
 
-		node = node->m_parent;
+		parent = parent->m_parent;
 	}
 }
 
@@ -83,9 +99,7 @@ void Node::traverse(std::function<void(Node* node)> on_node)
     on_node(this);
 
     for (Node* child : m_children)
-    {
         child->traverse(on_node);
-    }
 }
 
 void Node::traverse_const(std::function<void(Node const* node)> on_node) const
@@ -93,7 +107,5 @@ void Node::traverse_const(std::function<void(Node const* node)> on_node) const
     on_node(this);
 
     for (Node* child : m_children)
-    {
         child->traverse_const(on_node);
-    }
 }

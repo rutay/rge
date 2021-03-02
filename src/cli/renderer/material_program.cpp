@@ -51,8 +51,10 @@ void MaterialProgramRegistry::__register(int8_t material_id, MaterialProgram* ma
 void MaterialProgramRegistry::init()
 {
 	static BasicMaterialProgram basic_material_program;
+	static PbrMaterialProgram   pbr_material_program;
 
 	RGE_MATERIAL_ASSOCIATE_PROGRAM(BasicMaterial, &basic_material_program);
+	RGE_MATERIAL_ASSOCIATE_PROGRAM(PbrMaterial, &pbr_material_program);
 }
 
 MaterialProgram* MaterialProgramRegistry::get(Material const* material)
@@ -82,7 +84,26 @@ void BasicMaterialProgram::set_material(Material const* material) const
 {
 	auto basic_material = dynamic_cast<BasicMaterial const*>(material);
 
-	bgfx::setUniform(m_color_uniform, basic_material->m_color);
+	bgfx::setUniform(m_color_uniform, reinterpret_cast<void const*>(&basic_material->m_color));
 }
 
+// ------------------------------------------------------------------------------------------------
+// PbrMaterialProgram
+// ------------------------------------------------------------------------------------------------
 
+void PbrMaterialProgram::init()
+{
+	bgfx::ShaderHandle vertex_shader, fragment_shader;
+	load_shader(vertex_shader, RGE_FILEPATH("assets/cli/shaders/basic.vs.bin"));
+	load_shader(fragment_shader, RGE_FILEPATH("assets/cli/shaders/basic.fs.bin"));
+	m_program = bgfx::createProgram(vertex_shader, fragment_shader, true);
+
+	m_base_color_uniform = bgfx::createUniform("u_color", bgfx::UniformType::Vec4);
+}
+
+void PbrMaterialProgram::set_material(Material const* material) const
+{
+	auto pbr_material = dynamic_cast<PbrMaterial const*>(material);
+
+	bgfx::setUniform(m_base_color_uniform, reinterpret_cast<void const*>(&pbr_material->m_base_color));
+}

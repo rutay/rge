@@ -1,32 +1,50 @@
 #include "entry.hpp"
 
-#include <cstdlib>
 #include <cstdio>
 
 #include "scene/tinygltf_scene_loader.hpp"
 #include "scene/utils.hpp"
-#include "scene/material.hpp"
 
 using namespace rge::scene;
+
+Node* create_cube(rge::Vec3 position, rge::Vec4 color)
+{
+	Node* node = new Node();
+	node->m_position = position;
+
+	Mesh* mesh = new Mesh();
+	mesh->m_geometry = &rge::scene::utils::CubeGeometry;
+
+	node->m_meshes.push_back(mesh);
+
+	BasicMaterial* material = new BasicMaterial;
+	material->m_color = color;
+	mesh->m_material = material;
+
+	return node;
+}
 
 void MyGame::on_init()
 {
     printf("Init\n");
 
     rge::scene::SceneLoader_tinygltf loader;
-    //m_scene = loader.load_from_resource("assets/models/McLaren.glb");
 
-	m_scene = new Node();
+    m_scene = new Node();
 
-	Mesh* mesh = new Mesh();
-	mesh->m_geometry = &rge::scene::utils::CubeGeometry;
+    Node* gumball_darwin = loader.load_from_resource("assets/models/gumball_darwin.glb");
+	m_scene->m_children.push_back(gumball_darwin);
 
-	BasicMaterial* material = new BasicMaterial;
-	material->m_color[0] = 1.0f;
-	material->m_color[3] = 1.0f;
-	mesh->m_material = material;
+	//Node* mc_laren = loader.load_from_resource("assets/models/McLaren.glb");
+	//m_scene->m_children.push_back(mc_laren);
 
-	m_scene->m_meshes.push_back(mesh);
+	//Node* shrek = loader.load_from_resource("assets/models/shrek/scene.gltf");
+	//m_scene->m_children.push_back(shrek);
+
+	//Node* cube1 = create_cube(0, 0, 0, {1.0f, 0.0f, 1.0f, 1.0f});
+	//Node* cube2 = create_cube(0, 2, 0, {1.0f, 1.0f, 0.0f, 1.0f});
+	//m_scene->m_children.push_back(cube1);
+	//m_scene->m_children.push_back(cube2);
 
 	m_renderer = new rge::renderer::bgfxRenderer();
 

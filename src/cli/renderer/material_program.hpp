@@ -50,4 +50,17 @@ public:
 	void init() override;
 	void set_material(Material const* material) const override;
 };
+
+//
+
+class PbrMaterialProgram : public MaterialProgram
+{
+protected:
+	bgfx::UniformHandle m_base_color_uniform;
+
+public:
+	void init() override;
+	void set_material(Material const* material) const override;
+};
+
 }

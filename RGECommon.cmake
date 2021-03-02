@@ -65,6 +65,9 @@ set(RGE_SRCS
 	"src/resource_provider.hpp"
 	"src/resource_provider.cpp"
 	"src/packet.hpp"
+
+	"src/util.cpp"
+	"src/util.hpp"
 )
 
 set(RGE_INCLUDE_DIR "src")

@@ -174,13 +174,14 @@ struct Node
 	std::vector<Mesh*> m_meshes;
 	Light* m_light;
 
-	float m_rotation[4];
-	float m_position[3];
-	float m_scale[3];
+	Vec3 m_position;
+	Quaternion m_rotation;
+	Vec3 m_scale;
 
 	float m_local_transform[16];
 	float m_world_transform[16];
 
+	void update_position_rotation_scale_from_local_transform();
 	void update_local_transform();
 	void update_world_transform();
 

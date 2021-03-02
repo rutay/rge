@@ -7,7 +7,37 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <tiny_gltf.h>
 
+using namespace rge;
 using namespace rge::scene;
+
+Vec3 parse_vec3(std::vector<double> const& vec3)
+{
+	return {
+		.x = (float) vec3[0],
+		.y = (float) vec3[1],
+		.z = (float) vec3[2]
+	};
+}
+
+Vec4 parse_vec4(std::vector<double> const& vec4)
+{
+	return {
+		.x = (float) vec4[0],
+		.y = (float) vec4[1],
+		.z = (float) vec4[2],
+		.w = (float) vec4[3]
+	};
+}
+
+Quaternion parse_quaternion(std::vector<double> const& raw)
+{
+	return {
+		.x = (float) raw[0],
+		.y = (float) raw[1],
+		.z = (float) raw[2],
+		.w = (float) raw[3]
+	};
+}
 
 Buffer* SceneLoader_tinygltf::load_buffer(tinygltf::Model const& gltf_model, int buffer_idx)
 {
@@ -77,16 +107,16 @@ Accessor* SceneLoader_tinygltf::load_accessor(tinygltf::Model const& gltf_model,
 
 Material* SceneLoader_tinygltf::load_material(tinygltf::Model const& gltf_model, int material_idx)
 {
-	if (m_material_by_idx.contains(material_idx))
+	if (m_material_by_idx.contains(material_idx)) {
 		return m_material_by_idx.at(material_idx);
-
-	BasicMaterial* material = new BasicMaterial(); // todo
-	material->m_color[0] = 1.0f;
-	material->m_color[3] = 1.0f;
+	}
 
 	tinygltf::Material const& gltf_material = gltf_model.materials[material_idx];
 
-	// TODO
+	PbrMaterial* material = new PbrMaterial();
+	material->m_metallic   = (float) gltf_material.pbrMetallicRoughness.metallicFactor;
+	material->m_roughness  = (float) gltf_material.pbrMetallicRoughness.roughnessFactor;
+	material->m_base_color = parse_vec3(gltf_material.pbrMetallicRoughness.baseColorFactor);
 
 	m_material_by_idx.insert({material_idx, material});
 
@@ -162,25 +192,24 @@ Node* SceneLoader_tinygltf::load_node(tinygltf::Model const& gltf_model, int nod
 		load_mesh(gltf_model, gltf_node.mesh, node->m_meshes);
 	}
 
-	if (!gltf_node.translation.empty()) {
-		for (int i = 0; i < 3; i++) {
-			node->m_position[i] = (float)gltf_node.translation[i];
+	if (!gltf_node.matrix.empty())
+	{
+		for (int i = 0; i < 16; i++) node->m_local_transform[i] = (float) gltf_node.matrix[i];
+
+		node->update_position_rotation_scale_from_local_transform();
+	}
+	else
+	{
+		bool should_update_local_transform = false;
+
+		if (!gltf_node.translation.empty()) node->m_position = parse_vec3(gltf_node.translation),    should_update_local_transform = true;
+		if (!gltf_node.rotation.empty())    node->m_rotation = parse_quaternion(gltf_node.rotation), should_update_local_transform = true;
+		if (!gltf_node.scale.empty())       node->m_scale    = parse_vec3(gltf_node.scale),          should_update_local_transform = true;
+
+		if (should_update_local_transform) {
+			node->update_local_transform();
 		}
 	}
-
-	if (!gltf_node.rotation.empty()) {
-		for (int i = 0; i < 4; i++) {
-			node->m_rotation[i] = (float)gltf_node.rotation[i];
-		}
-	}
-
-	if (!gltf_node.scale.empty()) {
-		for (int i = 0; i < 3; i++) {
-			node->m_scale[i] = (float)gltf_node.scale[i];
-		}
-	}
-
-	node->update_local_transform();
 
 	if (parent) {
 		node->m_parent = parent;

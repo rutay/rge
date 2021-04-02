@@ -1,16 +1,16 @@
-
 #include "resource_provider.hpp"
 
 #include <fstream>
 
 using namespace rge;
 
-int resource_provider::get_size(char const* path)
+int ResourceProvider::get_size(std::filesystem::path path)
 {
-	return read(path, nullptr);
+	read<char>(path, nullptr);
 }
 
-int resource_provider::read(char const* path, uint8_t* buffer)
+template<typename T>
+int ResourceProvider::read(std::filesystem::path path, T* buffer)
 {
 	std::ifstream file(path, std::ios::binary | std::ios::ate);
 
@@ -24,11 +24,5 @@ int resource_provider::read(char const* path, uint8_t* buffer)
 	if (buffer) {
 		file.read(reinterpret_cast<char*>(buffer), size);
 	}
-	return size;
-}
-
-int resource_provider::read(char const* path, std::vector<uint8_t>& buffer)
-{
-	buffer.resize(get_size(path));
-	return read(path, buffer.data());
+	return size / sizeof(T);
 }

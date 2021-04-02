@@ -1,10 +1,10 @@
 #include "scene.hpp"
 
-#include <bx/util.h>
+#include <bx/math.h>
 
-using namespace rge::scene;
+using namespace rge;
 
-size_t rge::scene::ComponentType_byte_size(ComponentType component_type)
+size_t rge::ComponentType_byte_size(ComponentType component_type)
 {
 	switch (component_type)
 	{

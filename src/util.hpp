@@ -36,9 +36,29 @@ template<typename T>
 struct Vec<4, T>
 {
 	union {
-		struct { float x, y, z, w; };
-		struct { float r, g, b, a; };
+		struct { T x, y, z, w; };
+		struct { T r, g, b, a; };
 	};
+
+	Vec<4, T>() = default;
+
+	Vec<4, T>(T x, T y, T z, T w) :
+	    x(x), y(y), z(z), w(w)
+	{}
+
+	Vec<4, T>(Vec<3, T> xyz, T w) :
+	    x(xyz.x),
+	    y(xyz.y),
+	    z(xyz.z),
+	    w(w)
+	{}
+
+	inline void operator=(Vec<3, T> const& other)
+	{
+		x = other.x;
+		y = other.y;
+		z = other.z;
+	}
 };
 
 using Vec4 = Vec<4, float>;

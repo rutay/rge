@@ -1,10 +1,9 @@
 #pragma once
 
-#include <bx/util.h>
+#include <bx/math.h>
 #include <SDL.h>
 
 #include <optional>
-
 
 namespace rge
 {

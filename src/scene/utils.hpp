@@ -3,7 +3,7 @@
 
 #include "scene.hpp"
 
-namespace rge::scene
+namespace rge
 {
 
 class utils

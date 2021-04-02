@@ -10,15 +10,12 @@ set(SRCS
 	"src/entry.hpp"
 )
 
-set(SHADERS
-	# ...
-)
+rge_begin_game(simple_game ${SRCS})
 
-rge_define_game(simple_game ${SRCS} ${SHADERS})
+rge_def_model("McLaren" "assets/models/McLaren.glb")
+rge_req_model("McLaren")
 
-rge_require_assets(
-	simple_game
-	"models/gumball_darwin.glb"
-	"models/shrek"
-	"models/McLaren.glb"
-)
+rge_def_model("GumballAndDarwin" "assets/models/gumball_darwin.glb")
+rge_req_model("GumballAndDarwin")
+
+rge_end_game()

@@ -8,8 +8,8 @@
 class MyGame : public rge::Game
 {
 private:
-    rge::scene::Node* m_scene;
-    rge::renderer::bgfxRenderer* m_renderer;
+    rge::Node* m_scene;
+    rge::Renderer* m_renderer;
 
     rge::FreeCamera m_free_camera;
     rge::FreeCamera_KeyboardMovementController m_camera_movement_ctrl;
@@ -17,7 +17,7 @@ private:
 
 public:
     void on_init() override;
-    void on_sdl_event(SDL_Event& event) override;
+    void on_event(SDL_Event& event) override;
     void on_update(double dt) override;
     void on_render() override;
 };

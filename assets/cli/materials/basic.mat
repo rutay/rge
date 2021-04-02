@@ -1,0 +1,5 @@
+
+vec3 apply_light(Light light, vec3 position, vec3 normal, vec3 light_vector)
+{
+    return material.color;
+}

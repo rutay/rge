@@ -1,7 +1,7 @@
 
 #include "utils.hpp"
 
-using namespace rge::scene;
+using namespace rge;
 
 // ------------------------------------------------------------------------------------------------
 // Point
@@ -31,7 +31,7 @@ Geometry utils::PointGeometry = []
 		.m_normalized = false
 	};
 	return Geometry{
-		.m_mode = DrawMode::POINTS,
+		.m_mode = DrawMode::Enum::POINTS,
 		.m_attributes = {&accessor},
 		.m_indices = nullptr
 	};
@@ -65,8 +65,9 @@ Geometry utils::LineGeometry = []
 		.m_count = 2,
 		.m_normalized = false
 	};
+
 	return Geometry{
-		.m_mode = DrawMode::LINES,
+		.m_mode = DrawMode::Enum::LINES,
 		.m_attributes = {&accessor},
 		.m_indices = nullptr
 	};
@@ -111,7 +112,7 @@ unsigned short CubeGeometry_indices[]{
 };
 
 Geometry utils::CubeGeometry{
-	.m_mode = DrawMode::TRIANGLES,
+	.m_mode = DrawMode::Enum::TRIANGLES,
 	.m_attributes = {
 		new Accessor{
 			.m_buffer_view = new BufferView{

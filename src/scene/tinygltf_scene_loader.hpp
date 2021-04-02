@@ -4,7 +4,7 @@
 
 #include <tiny_gltf.h>
 
-namespace rge::scene
+namespace rge
 {
 struct SceneLoader_tinygltf
 {

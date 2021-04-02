@@ -8,7 +8,6 @@
 #include <tiny_gltf.h>
 
 using namespace rge;
-using namespace rge::scene;
 
 Vec3 parse_vec3(std::vector<double> const& vec3)
 {
@@ -21,12 +20,12 @@ Vec3 parse_vec3(std::vector<double> const& vec3)
 
 Vec4 parse_vec4(std::vector<double> const& vec4)
 {
-	return {
-		.x = (float) vec4[0],
-		.y = (float) vec4[1],
-		.z = (float) vec4[2],
-		.w = (float) vec4[3]
-	};
+	return Vec4(
+		(float) vec4[0],
+		(float) vec4[1],
+		(float) vec4[2],
+		(float) vec4[3]
+	);
 }
 
 Quaternion parse_quaternion(std::vector<double> const& raw)
@@ -113,7 +112,7 @@ Material* SceneLoader_tinygltf::load_material(tinygltf::Model const& gltf_model,
 
 	tinygltf::Material const& gltf_material = gltf_model.materials[material_idx];
 
-	PbrMaterial* material = new PbrMaterial();
+	PBRMaterial* material = new PBRMaterial();
 	material->m_metallic   = (float) gltf_material.pbrMetallicRoughness.metallicFactor;
 	material->m_roughness  = (float) gltf_material.pbrMetallicRoughness.roughnessFactor;
 	material->m_base_color = parse_vec3(gltf_material.pbrMetallicRoughness.baseColorFactor);
@@ -135,13 +134,13 @@ Mesh* SceneLoader_tinygltf::load_primitive(tinygltf::Model const& gltf_model, in
 
 	// Geometry
 	Geometry* geometry = new Geometry();
-	geometry->m_mode = static_cast<DrawMode>(gltf_primitive.mode);
+	geometry->m_mode = static_cast<DrawMode::Enum>(gltf_primitive.mode);
 
 	for (auto[attrib_name, accessor_idx] : gltf_primitive.attributes) {
 		if (accessor_idx < 0)
 			continue;
 
-		AttribType attrib_type;
+		AttribType::Enum attrib_type;
 		if (attrib_name == "POSITION")        attrib_type = AttribType::POSITION;
 		else if (attrib_name == "NORMAL")     attrib_type = AttribType::NORMAL;
 		else if (attrib_name == "TANGENT")    attrib_type = AttribType::TANGENT;

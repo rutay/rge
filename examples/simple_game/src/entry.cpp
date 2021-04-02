@@ -4,8 +4,11 @@
 
 #include "scene/tinygltf_scene_loader.hpp"
 #include "scene/utils.hpp"
+#include "scene/material.hpp"
 
-using namespace rge::scene;
+#include "cli/platform/platform.hpp"
+
+using namespace rge;
 
 Node* create_cube(rge::Vec3 position, rge::Vec4 color)
 {
@@ -13,7 +16,7 @@ Node* create_cube(rge::Vec3 position, rge::Vec4 color)
 	node->m_position = position;
 
 	Mesh* mesh = new Mesh();
-	mesh->m_geometry = &rge::scene::utils::CubeGeometry;
+	mesh->m_geometry = &rge::utils::CubeGeometry;
 
 	node->m_meshes.push_back(mesh);
 
@@ -28,7 +31,7 @@ void MyGame::on_init()
 {
     printf("Init\n");
 
-    rge::scene::SceneLoader_tinygltf loader;
+    rge::SceneLoader_tinygltf loader;
 
     m_scene = new Node();
 
@@ -46,14 +49,14 @@ void MyGame::on_init()
 	//m_scene->m_children.push_back(cube1);
 	//m_scene->m_children.push_back(cube2);
 
-	m_renderer = new rge::renderer::bgfxRenderer();
+	m_renderer = Renderer::create();
 
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 
 	m_free_camera.m_aspect_ratio = float(m_width) / m_height;
 }
 
-void MyGame::on_sdl_event(SDL_Event &event)
+void MyGame::on_event(SDL_Event &event)
 {
 	m_camera_movement_ctrl.on_sdl_event(event);
 	m_camera_orientation_ctrl.on_sdl_event(m_free_camera, event);
@@ -73,7 +76,7 @@ void MyGame::on_update(double dt)
 void MyGame::on_render()
 {
     //printf("Rendering\n");
-    m_renderer->render(0, m_scene, m_free_camera);
+    m_renderer->render(m_scene, m_free_camera);
 }
 
-RGE_DEFINE_MAIN(MyGame)
+RGE_define_game(MyGame)

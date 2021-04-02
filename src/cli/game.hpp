@@ -1,43 +1,49 @@
 #pragma once
 
-#include "boot.hpp"
+#include <SDL.h>
 
 #include <cstdint>
 #include <string>
 
 namespace rge
 {
-    class Game
-    {
-    private:
-        uint64_t m_last_update_time = 0, m_last_fps_counter_reset_time = 0;
-        uint32_t m_fps_counter = 0, m_fps = 0;
 
-    public:
-    	std::string title;
-        bool m_should_close = false;
-        uint32_t m_width, m_height;
+// ------------------------------------------------------------------------------------------------
+// Game
+// ------------------------------------------------------------------------------------------------
 
-    protected:
-        virtual void on_init() {}
-        virtual void on_update(double dt) {}
-        virtual void on_render() {}
-        virtual void on_shutdown() {}
+class Game
+{
+private:
+	uint64_t m_last_update_time = 0, m_last_fps_counter_reset_time = 0;
+	uint32_t m_fps_counter = 0, m_fps = 0;
 
-		virtual void on_sdl_event(SDL_Event& event) {}
+public:
+	std::string m_title;
+	bool m_should_close = false;
+	uint32_t m_width, m_height;
 
-        virtual void on_resize(uint32_t width, uint32_t height) {}
+protected:
+	virtual void on_init() {}
+	virtual void on_update(double dt) {}
+	virtual void on_render() {}
+	virtual void on_shutdown() {}
 
-    public:
-        void init();
-        void update();
-        void render();
-        void shutdown();
+	virtual void on_resize(uint32_t width, uint32_t height) {}
 
-        void resize(uint32_t width, uint32_t height);
+public:
+	void init();
+	void update();
+	void render();
+	void shutdown();
+	virtual void on_event(SDL_Event& event) {}
+	void resize(uint32_t width, uint32_t height);
+};
 
-		void notify_sdl_event(SDL_Event& event);
-    };
+// ------------------------------------------------------------------------------------------------
+// Boot
+// ------------------------------------------------------------------------------------------------
+
 
 
 }

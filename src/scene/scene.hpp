@@ -11,9 +11,9 @@
 
 #include <bgfx/bgfx.h>
 
-namespace rge::scene
+namespace rge
 {
-enum class ComponentType
+enum ComponentType
 {
 	BYTE = 5120,
 	UNSIGNED_BYTE = 5121,
@@ -77,7 +77,7 @@ struct Accessor
 	}
 };
 
-enum class LightType
+enum LightType
 {
 	POINT,
 	DIRECTIONAL,
@@ -88,72 +88,63 @@ enum class LightType
 
 struct Light
 {
-	LightType const m_type;
-
-	float color[3];
-	float intensity;
-
-	bool m_dirty;
-
-protected:
-	Light(LightType type)
-		: m_type(type)
-	{}
+	LightType m_type;
+	Vec3 m_color;
+	float m_intensity;
 };
 
 struct PointLight: public Light
 {
-	PointLight()
-		: Light(LightType::POINT)
-	{}
+	float m_radius;
 };
 
 struct DirectionalLight: public Light
 {
-	DirectionalLight()
-		: Light(LightType::DIRECTIONAL)
-	{}
+	Vec3 m_direction;
 };
 
 struct SpotLight: public Light
 {
-	// TODO
-
-	SpotLight()
-		: Light(LightType::SPOT)
-	{}
+	Vec3 m_direction;
+	float m_angle;
 };
 
-enum class AttribType
+struct AttribType
 {
-	POSITION,
-	NORMAL,
-	TANGENT,
-	TEXCOORD_0,
-	TEXCOORD_1,
-	COLOR_0,
-	JOINTS_0,
-	WEIGHTS_0,
+	enum Enum
+	{
+		POSITION,
+		NORMAL,
+		TANGENT,
+		TEXCOORD_0,
+		TEXCOORD_1,
+		COLOR_0,
+		JOINTS_0,
+		WEIGHTS_0,
 
-	Count
+		Count
+	};
 };
 
-enum class DrawMode
+struct DrawMode
 {
-	POINTS,
-	LINES,
-	LINE_LOOP,
-	LINE_STRIP,
-	TRIANGLES,
-	TRIANGLE_STRIP,
-	TRIANGLE_FAN,
+	enum Enum
+	{
+		POINTS,
+		LINES,
+		LINE_LOOP,
+		LINE_STRIP,
+		TRIANGLES,
+		TRIANGLE_STRIP,
+		TRIANGLE_FAN,
 
-	Count
+		Count
+	};
 };
 
 struct Geometry
 {
-	DrawMode m_mode;
+	DrawMode::Enum m_mode;
 
 	Accessor* m_attributes[static_cast<size_t>(AttribType::Count)];
 	Accessor* m_indices;

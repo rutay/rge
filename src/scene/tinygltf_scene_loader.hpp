@@ -29,7 +29,7 @@ public:
 
 	void clear_cache();
 	Node* load(tinygltf::Model& gltf_model);
-	Node* load_from_resource(char const* path);
+	Node* load_from_resource(Resource resource);
 };
 }
 

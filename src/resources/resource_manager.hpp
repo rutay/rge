@@ -10,68 +10,66 @@
 
 namespace rge
 {
-
-namespace resources
-{
-enum Shader;
-enum MaterialShader;
-enum Material;
-}
-
-struct ResourceDescriptor
-{
-	std::filesystem::path m_path;
-};
-
-class ResourceManager
-{
-private:
-	static std::unordered_map<Resource, ResourceDescriptor> s_resource_descriptors;
-	static std::unordered_map<uint32_t, Resource> s_resource_binary_assoc;
-
-	ResourceManager() = default;
-
-public:
-	static void register_resource_desc(Resource res, ResourceDescriptor res_desc)
+	namespace resources
 	{
-		s_resource_descriptors.emplace(res, res_desc);
+		enum Shader;
+		enum MaterialShader;
+		enum Material;
 	}
 
-	static void register_resource_desc(Resource res, std::filesystem::path res_path)
+	struct ResourceDescriptor
 	{
-		register_resource_desc(res, {
-			.m_path = res_path
-		});
-	}
+		std::filesystem::path m_path;
+	};
 
-	static ResourceDescriptor const& get_resource_desc(Resource resource)
+	namespace ResourceManager
 	{
-		return s_resource_descriptors[resource];
-	}
+		namespace detail
+		{
+			inline std::unordered_map<Resource, ResourceDescriptor> s_resource_descriptors;
+			inline std::unordered_map<uint32_t, Resource> s_resource_binary_assoc;
+		}
 
-	static std::filesystem::path const& get_resource_path(Resource resource)
-	{
-		return get_resource_desc(resource).m_path;
-	}
+		inline void register_resource_desc(Resource res, ResourceDescriptor res_desc)
+		{
+			detail::s_resource_descriptors.emplace(res, res_desc);
+		}
 
-	static void register_resource_binary_assoc(Resource res_a, Resource res_b, Resource res_c)
-	{
-		s_resource_binary_assoc.emplace(((uint32_t) res_a) << 16 | res_b, res_c);
-	}
+		inline void register_resource_desc(Resource res, std::filesystem::path res_path)
+		{
+			register_resource_desc(res, {
+				.m_path = res_path
+			});
+		}
 
-	static Resource get_resource_from_assoc(Resource res_a, Resource res_b)
-	{
-		return s_resource_binary_assoc.at(((uint32_t) res_a) << 16 | res_b);
-	}
+		inline ResourceDescriptor const& get_resource_desc(Resource resource)
+		{
+			return detail::s_resource_descriptors[resource];
+		}
 
-	static resources::MaterialShader get_material_shader(resources::Shader shader, resources::Material material)
-	{
-		return (resources::MaterialShader) (get_resource_from_assoc(shader, material));
-	}
+		inline std::filesystem::path const& get_resource_path(Resource resource)
+		{
+			return get_resource_desc(resource).m_path;
+		}
 
-	static resources::MaterialShader get_material_shader(resources::Shader shader, Material const* material)
-	{
-		return get_material_shader(shader, (resources::Material) material->get_resource());
-	}
-};
+		inline void register_resource_binary_assoc(Resource res_a, Resource res_b, Resource res_c)
+		{
+			detail::s_resource_binary_assoc.emplace(((uint32_t)res_a) << 16 | res_b, res_c);
+		}
+
+		inline Resource get_resource_from_assoc(Resource res_a, Resource res_b)
+		{
+			return detail::s_resource_binary_assoc[((uint32_t)res_a) << 16 | res_b];
+		}
+
+		inline resources::MaterialShader get_material_shader(resources::Shader shader, resources::Material material)
+		{
+			return (resources::MaterialShader)(get_resource_from_assoc(shader, material));
+		}
+
+		inline resources::MaterialShader get_material_shader(resources::Shader shader, Material const* material)
+		{
+			return get_material_shader(shader, (resources::Material)material->get_resource());
+		}
+	};
 }

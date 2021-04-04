@@ -39,7 +39,7 @@ public:
 	std::unordered_map<Node const*, GLuint> m_baked_lights_by_root_node;
 
 	std::unordered_map<resources::Material, GLuint> m_program_by_material_type;
-	std::unordered_map<Material const*, GLuint> m_material_uniform_buffers;
+	std::unordered_map<Material const*, GLuint> m_ubo_by_material;
 
 	BakedGeometry& get_or_bake_geometry(Geometry const* geometry);
 	GLuint get_or_create_program(Material const* material);

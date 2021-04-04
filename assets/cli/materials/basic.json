@@ -1,9 +1,0 @@
-{
-    "uniforms": [
-        {
-            "name": "color",
-            "type": "vec3"
-        }
-    ],
-    "code": "basic.mat"
-}

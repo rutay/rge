@@ -1,6 +1,7 @@
 #pragma once
 
 #include "material.hpp"
+#include "util.hpp"
 
 #include <vector>
 #include <memory>
@@ -93,17 +94,17 @@ struct Light
 	float m_intensity;
 };
 
-struct PointLight: public Light
+struct PointLight : public Light
 {
 	float m_radius;
 };
 
-struct DirectionalLight: public Light
+struct DirectionalLight : public Light
 {
 	Vec3 m_direction;
 };
 
-struct SpotLight: public Light
+struct SpotLight : public Light
 {
 	Vec3 m_direction;
 	float m_angle;

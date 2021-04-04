@@ -1,26 +1,39 @@
 
 #pragma once
 
+#include "util.hpp"
+
 #include "material.hpp"
 #include "resources_def.hpp"
 
 namespace rge::materials
 {
-template<Resource resource>
-struct __BaseMaterial : public Material
-{
-	const Resource m_resource = resource;
-	Resource get_resource() const override { return m_resource; };
-};
+	namespace detail
+	{
+		template<resources::Material material_type>
+		struct BaseMaterial : public Material
+		{
+			resources::Material get_resource() const override { return material_type; };
+		};
+	}
 
-struct BasicMaterial : public __BaseMaterial<resources::Basic>
-{
-	Vec4 m_color{ 0, 0, 0, 0 };
-};
+	struct BasicMaterial : public detail::BaseMaterial<resources::Basic>
+	{
+		Vec4 m_color;
+	};
 
-struct PhongMaterial : public __BaseMaterial<resources::Basic>
-{
+	struct PhongMaterial : public detail::BaseMaterial<resources::Phong>
+	{
+		Vec3 m_ambient;
+		Vec3 m_diffuse;
+		Vec3 m_specular;
+		float m_shininess;
+	};
 
-};
-
+	struct StandardMaterial : public detail::BaseMaterial<resources::Standard>
+	{
+		float m_metallic;
+		float m_roughness;
+		Vec3 m_base_color;
+	};
 }

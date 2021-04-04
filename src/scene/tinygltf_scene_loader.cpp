@@ -1,6 +1,7 @@
 #include "tinygltf_scene_loader.hpp"
 
-#include "resource_provider.hpp"
+#include "resources/resource_provider.hpp"
+#include "materials_def.hpp"
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -112,12 +113,12 @@ Material* SceneLoader_tinygltf::load_material(tinygltf::Model const& gltf_model,
 
 	tinygltf::Material const& gltf_material = gltf_model.materials[material_idx];
 
-	PBRMaterial* material = new PBRMaterial();
+	materials::StandardMaterial* material = new materials::StandardMaterial();
 	material->m_metallic   = (float) gltf_material.pbrMetallicRoughness.metallicFactor;
 	material->m_roughness  = (float) gltf_material.pbrMetallicRoughness.roughnessFactor;
 	material->m_base_color = parse_vec3(gltf_material.pbrMetallicRoughness.baseColorFactor);
 
-	m_material_by_idx.insert({material_idx, material});
+	m_material_by_idx.emplace(material_idx, material);
 
 	return material;
 }
@@ -269,10 +270,10 @@ Node* SceneLoader_tinygltf::load(tinygltf::Model& gltf_model)
 	return def_scene;
 }
 
-Node* SceneLoader_tinygltf::load_from_resource(char const* path)
+Node* SceneLoader_tinygltf::load_from_resource(Resource resource)
 {
 	std::vector<uint8_t> buffer;
-	rge::resource_provider::read(path, buffer);
+	ResourceProvider::read<uint8_t>(resource, buffer);
 
 	tinygltf::TinyGLTF gltf_loader;
 	tinygltf::Model gltf_model;

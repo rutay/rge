@@ -6,7 +6,7 @@ using namespace rge;
 
 int ResourceProvider::get_size(std::filesystem::path path)
 {
-	read<char>(path, nullptr);
+	return read<char>(path, nullptr);
 }
 
 template<typename T>

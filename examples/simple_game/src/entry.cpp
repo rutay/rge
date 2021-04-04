@@ -5,6 +5,7 @@
 #include "scene/tinygltf_scene_loader.hpp"
 #include "scene/utils.hpp"
 #include "scene/material.hpp"
+#include "scene/materials_def.hpp"
 
 #include "cli/platform/platform.hpp"
 
@@ -20,7 +21,7 @@ Node* create_cube(rge::Vec3 position, rge::Vec4 color)
 
 	node->m_meshes.push_back(mesh);
 
-	BasicMaterial* material = new BasicMaterial;
+	materials::BasicMaterial* material = new materials::BasicMaterial();
 	material->m_color = color;
 	mesh->m_material = material;
 
@@ -35,7 +36,7 @@ void MyGame::on_init()
 
     m_scene = new Node();
 
-    Node* gumball_darwin = loader.load_from_resource("assets/models/gumball_darwin.glb");
+    Node* gumball_darwin = loader.load_from_resource(resources::Model::GumballAndDarwin);
 	m_scene->m_children.push_back(gumball_darwin);
 
 	//Node* mc_laren = loader.load_from_resource("assets/models/McLaren.glb");

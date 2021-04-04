@@ -61,6 +61,8 @@ add_compile_definitions(BUILD_CLIENT)
 set(RGE_SRC
 	"src/server/main.cpp"
 
+	"src/rge_init.hpp"
+
 	"src/cli/platform/platform.hpp"
 	"src/cli/renderer/renderer.cpp"
 	"src/cli/renderer/renderer.hpp"
@@ -68,8 +70,8 @@ set(RGE_SRC
 	"src/cli/platform/platform_all_sdl2_gl.cpp" # TODO choose platform and renderer dynamically.
 	"src/cli/renderer/renderer_gl.cpp"
 	"src/cli/renderer/renderer_gl.hpp"
-	#"src/cli/renderer/material_handler.cpp"
 	"src/cli/renderer/material_serializer.hpp"
+	"src/cli/renderer/material_serializers_def.hpp"
 
 	"src/resources/filesystem_resource_provider.cpp" # todo dynamically choose which resource provider to use
 	"src/resources/resource_provider.hpp"
@@ -483,10 +485,18 @@ function (rge_begin_game GAME_NAME SRCS)
 
 	rge_def_shader("Glsl_FS_IterLights" ".rge/assets/cli/shaders/glsl/iter_lights.frag")
 
-	rge_def_material("Basic" ".rge/assets/cli/materials/basic.json")
+	rge_def_material("Basic" ".rge/assets/cli/materials/basic.mat")
+	rge_def_material("Phong" ".rge/assets/cli/materials/phong.mat")
+	rge_def_material("Standard" ".rge/assets/cli/materials/standard.mat")
 
 	rge_def_material_shader("Glsl_FS_IterLights_Basic" ".rge/assets/cli/material_shaders/glsl/iter_lights_basic.frag")
 	rge_compile_material_shader("Glsl_FS_IterLights" "Basic" "Glsl_FS_IterLights_Basic")
+
+	rge_def_material_shader("Glsl_FS_IterLights_Phong" ".rge/assets/cli/material_shaders/glsl/iter_lights_phong.frag")
+	rge_compile_material_shader("Glsl_FS_IterLights" "Phong" "Glsl_FS_IterLights_Phong")
+
+	rge_def_material_shader("Glsl_FS_IterLights_Standard" ".rge/assets/cli/material_shaders/glsl/iter_lights_standard.frag")
+	rge_compile_material_shader("Glsl_FS_IterLights" "Standard" "Glsl_FS_IterLights_Standard")
 
 	# ----------------------------------------------------------------
 	# Dependencies

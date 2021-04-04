@@ -7,13 +7,13 @@
 #include <glad/glad.h>
 
 #include "cli/game.hpp"
-#include "resource_def.hpp"
+#include "rge_init.hpp"
 
 using namespace rge;
 
 int rge::boot(Game &game, int argc, char *argv[])
 {
-	rge::resources::init();
+	rge::init();
 
 	SDL_Init(0);
 

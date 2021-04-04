@@ -8,35 +8,31 @@
 
 namespace rge
 {
-class ResourceProvider
+namespace ResourceProvider
 {
-private:
-	ResourceProvider() = default;
+	int get_size(std::filesystem::path path);
 
-public:
-	static int get_size(std::filesystem::path path);
-
-	static int get_size(Resource resource)
+	inline int get_size(Resource resource)
 	{
 		return get_size(ResourceManager::get_resource_path(resource));
 	}
 
 	template<typename T>
-	static int read(std::filesystem::path path, T* buffer);
+	int read(std::filesystem::path path, T* buffer);
 
 	template<typename T>
-	static int read(Resource resource, T* buffer)
+	int read(Resource resource, T* buffer)
 	{
-		return read(ResourceManager::get_resource_path(resource), buffer);
+		return read<T>(ResourceManager::get_resource_path(resource), buffer);
 	}
 
 	template<typename T>
-	static int read(Resource resource, std::vector<T>& buffer)
+	int read(Resource resource, std::vector<T>& buffer)
 	{
 		auto path = ResourceManager::get_resource_path(resource);
 		int size = get_size(path);
 		buffer.resize(size);
-		return read(path, buffer.data());
+		return read<T>(path, buffer.data());
 	}
 };
 }

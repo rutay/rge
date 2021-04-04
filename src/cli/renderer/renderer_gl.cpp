@@ -2,12 +2,15 @@
 #include "renderer_gl.hpp"
 
 #include "resources/resource_provider.hpp"
+#include "material_serializer.hpp"
 
 #include <iostream>
 #include <filesystem>
 
 #define RGE_BUFFER_IDX_LIGHTS   1
 #define RGE_BUFFER_IDX_MATERIAL 2
+
+#define RGE_MAX_MATERIAL_BYTE_SIZE 1024
 
 using namespace rge;
 
@@ -124,24 +127,22 @@ GLuint RendererGL::get_or_create_program(Material const* material)
 
 GLuint RendererGL::get_or_bake_material_ubo(Material const* material)
 {
-	if (!m_material_uniform_buffers.contains(material))
+	if (!m_ubo_by_material.contains(material))
 	{
-		size_t size = RGE_MAX_MATERIAL_TYPES;
-		uint8_t* data = (uint8_t*) malloc(size);
+		size_t size;
+		uint8_t data[RGE_MAX_MATERIAL_BYTE_SIZE];
 
-		MaterialRegistry::serialize_material(material, data, size);
+		MaterialSerializerManager::serialize(material, data, size);
 
 		GLuint uniform_buffer;
 		glGenBuffers(1, &uniform_buffer);
 		glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer);
 		glBufferData(GL_UNIFORM_BUFFER, size, data, GL_STATIC_DRAW);
 
-		free(data);
-
-		m_material_uniform_buffers.insert({ material, uniform_buffer });
+		m_ubo_by_material.insert({ material, uniform_buffer });
 	}
 
-	return m_material_uniform_buffers[material];
+	return m_ubo_by_material[material];
 }
 
 RendererGL::BakedGeometry& RendererGL::get_or_bake_geometry(Geometry const* geometry)

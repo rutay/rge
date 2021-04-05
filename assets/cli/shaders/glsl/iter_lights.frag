@@ -4,11 +4,9 @@ in vec3 v_position;
 in vec3 v_normal;
 in vec3 v_color;
 
-#define MAX_LIGHT_BUFFER_SIZE 128
+uniform vec3 u_view_pos;
 
-#define LIGHT_TYPE_POINT_LIGHT       0
-#define LIGHT_TYPE_DIRECTIONAL_LIGHT 1
-#define LIGHT_TYPE_SPOT_LIGHT        2
+#define MAX_LIGHT_BUFFER_SIZE 128
 
 struct Light
 {
@@ -21,33 +19,30 @@ struct Light
 	float distance;
 };
 
-layout(std140) uniform LightBuffer
+layout(std140) uniform rge_LightBuffer_ubo
 {
-    uint lights_count;
     Light lights[MAX_LIGHT_BUFFER_SIZE];
+    uint lights_count;
 };
 
 #material
+// vec3 apply_light(vec3 view_pos, vec3 frag_pos, vec3 frag_norm, Light light)
 
-out vec4 f_color;
+out vec4 frag_color;
 
 void main()
 {
-    vec3 position = v_position;
-    vec3 normal   = v_normal;
-    vec3 color    = v_color;
+    vec3 frag_pos = v_position;
+    vec3 frag_norm = v_normal;
 
     vec3 res_color = vec3(0);
 
     for (int i = 0; i < lights_count; i++)
     {
-        Light light = lights[i];
-		vec3 light_vector;
-
-		res_color += apply_light(light, position, normal, light_vector);
+		res_color += apply_light(u_view_pos, frag_pos, frag_norm, lights[i]);
     }
 
 	// TODO Tone mapping to normalize the color values
 
-    f_color = vec4(res_color, 1);
+    frag_color = vec4(res_color, 1);
 }

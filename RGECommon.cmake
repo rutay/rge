@@ -118,7 +118,9 @@ endif()
 # Tools
 # ------------------------------------------------------------------------------------------------
 
-set(RGE_SHADERC "${RGE_HOME}/shaderc.py")
+set(RGE_TOOLS_DIR "${RGE_HOME}/tools")
+
+set(RGE_SHADERC "${RGE_TOOLS_DIR}/shaderc.py")
 
 # ------------------------------------------------------------------------------------------------
 # Third party
@@ -268,7 +270,7 @@ function (rge_resolve_src_path RETURN_VAR SYMBOLIC_PATH)
 endfunction()
 
 function (rge_resolve_dst_path RETURN_VAR SYMBOLIC_PATH)
-	set(${RETURN_VAR} ${SYMBOLIC_PATH} PARENT_SCOPE) # The symbolic path is equivalent to the binary-relative path.
+	set(${RETURN_VAR} "$<TARGET_FILE_DIR:${GAME_NAME}>/${SYMBOLIC_PATH}" PARENT_SCOPE) # The symbolic path is equivalent to the binary-relative path.
 endfunction()
 
 # ---
@@ -370,15 +372,21 @@ function (rge_compile_material_shader SHADER_NAME MATERIAL_NAME MATERIAL_SHADER_
 	set(MATERIAL_PATH "${Material_${MATERIAL_NAME}_PATH}")
 	set(MATERIAL_SHADER_PATH "${MaterialShader_${MATERIAL_SHADER_NAME}_PATH}")
 
+	rge_resolve_src_path(SHADER_PATH ${SHADER_PATH})
+	rge_resolve_src_path(MATERIAL_PATH ${MATERIAL_PATH})
+	rge_resolve_dst_path(MATERIAL_SHADER_PATH ${MATERIAL_SHADER_PATH})
+
+	get_filename_component(MATERIAL_SHADER_DIR ${MATERIAL_SHADER_PATH} DIRECTORY)
+
 	rge_log(NOTICE "Compiling material shader...")
 	rge_log(STATUS "Shader: ${SHADER_PATH}")
 	rge_log(STATUS "Material: ${MATERIAL_PATH}")
-	rge_log(STATUS "Material shader: ${MATERIAL_SHADER_PATH}")
+	rge_log(STATUS "Material shader: ${MATERIAL_SHADER_DIR}")
 
 	add_custom_command(
 			TARGET ${GAME_NAME}
 			POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E make_directory ${DST_SHADER_DIR}
+			COMMAND ${CMAKE_COMMAND} -E make_directory ${MATERIAL_SHADER_DIR}
 			COMMAND ${RGE_SHADERC} -i ${SHADER_PATH} -m ${MATERIAL_PATH} -o ${MATERIAL_SHADER_PATH}
 			MAIN_DEPENDENCY ${SHADER_PATH}
 	)

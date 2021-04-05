@@ -9,8 +9,7 @@ int ResourceProvider::get_size(std::filesystem::path path)
 	return read<char>(path, nullptr);
 }
 
-template<typename T>
-int ResourceProvider::read(std::filesystem::path path, T* buffer)
+int ResourceProvider::read(std::filesystem::path path, uint8_t* buffer)
 {
 	std::ifstream file(path, std::ios::binary | std::ios::ate);
 
@@ -24,5 +23,5 @@ int ResourceProvider::read(std::filesystem::path path, T* buffer)
 	if (buffer) {
 		file.read(reinterpret_cast<char*>(buffer), size);
 	}
-	return size / sizeof(T);
+	return size;
 }

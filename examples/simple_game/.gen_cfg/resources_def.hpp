@@ -3,29 +3,34 @@
 
 namespace rge::resources {
 
-enum Shader {
+enum class Shader {
+None = 0,
 Glsl_VS_BasicInst,
 Glsl_FS_IterLights
 };
 
-enum Material {
+enum class Material {
+None = 16777216,
 Basic,
 Phong,
 Standard
 };
 
-enum MaterialShader {
+enum class MaterialShader {
+None = 33554432,
 Glsl_FS_IterLights_Basic,
 Glsl_FS_IterLights_Phong,
 Glsl_FS_IterLights_Standard
 };
 
-enum Model {
+enum class Model {
+None = 50331648,
 McLaren,
 GumballAndDarwin
 };
 
-enum Texture {
+enum class Texture {
+None = 67108864,
 
 };
 

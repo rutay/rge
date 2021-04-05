@@ -270,10 +270,10 @@ Node* SceneLoader_tinygltf::load(tinygltf::Model& gltf_model)
 	return def_scene;
 }
 
-Node* SceneLoader_tinygltf::load_from_resource(Resource resource)
+Node* SceneLoader_tinygltf::load_from_resource(resources::Model model)
 {
 	std::vector<uint8_t> buffer;
-	ResourceProvider::read<uint8_t>(resource, buffer);
+	ResourceProvider::read(model, buffer);
 
 	tinygltf::TinyGLTF gltf_loader;
 	tinygltf::Model gltf_model;

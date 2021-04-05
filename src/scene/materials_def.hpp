@@ -17,12 +17,12 @@ namespace rge::materials
 		};
 	}
 
-	struct BasicMaterial : public detail::BaseMaterial<resources::Basic>
+	struct BasicMaterial : public detail::BaseMaterial<resources::Material::Basic>
 	{
 		Vec4 m_color;
 	};
 
-	struct PhongMaterial : public detail::BaseMaterial<resources::Phong>
+	struct PhongMaterial : public detail::BaseMaterial<resources::Material::Phong>
 	{
 		Vec3 m_ambient;
 		Vec3 m_diffuse;
@@ -30,7 +30,7 @@ namespace rge::materials
 		float m_shininess;
 	};
 
-	struct StandardMaterial : public detail::BaseMaterial<resources::Standard>
+	struct StandardMaterial : public detail::BaseMaterial<resources::Material::Standard>
 	{
 		float m_metallic;
 		float m_roughness;

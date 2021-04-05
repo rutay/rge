@@ -407,12 +407,18 @@ function (rge_submit_resources_def)
 	string(APPEND GEN_CODE "namespace rge::resources {\n\n")
 
 	# Resources definition
+	set(RES_TYPE_IDX "0")
 	foreach (RES_TYPE ${RES_TYPES})
-		string(APPEND GEN_CODE "enum ${RES_TYPE} {\n")
+		string(APPEND GEN_CODE "enum class ${RES_TYPE} {\n")
+
+		math(EXPR RES_START_IDX "${RES_TYPE_IDX} * 16777216") # res_type_idx * 2^24
+		string(APPEND GEN_CODE "None = ${RES_START_IDX},\n")
 
 		list(JOIN ${RES_TYPE}_DEF ",\n" RES_DEF)
 		string(APPEND GEN_CODE "${RES_DEF}\n")
 		string(APPEND GEN_CODE "}\;\n\n")
+
+		math(EXPR RES_TYPE_IDX "${RES_TYPE_IDX} + 1")
 	endforeach()
 
 	# Init

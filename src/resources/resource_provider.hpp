@@ -26,17 +26,20 @@ namespace ResourceProvider
 		return size > 0 ? size / sizeof(T) : size;
 	}
 
-	template<typename T>
-	int read(Resource resource, T* buffer)
+	template<is_resource_type R, typename T>
+	int read(R resource, T* buffer)
 	{
 		return read(ResourceManager::get_resource_path(resource), buffer);
 	}
 
-	template<typename T>
-	int read(Resource resource, std::vector<T>& buffer)
+	template<is_resource_type R, typename T>
+	int read(R resource, std::vector<T>& buffer)
 	{
 		auto path = ResourceManager::get_resource_path(resource);
 		int size = get_size(path);
+		if (size < 0) {
+			return size;
+		}
 		buffer.resize(size);
 		return read(path, buffer.data());
 	}

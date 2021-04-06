@@ -1,5 +1,11 @@
+# IDE folders
 .vs
 .vscode
 .idea
 
-build*
+# CMake build directory
+.build
+build
+
+# python
+venv

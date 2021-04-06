@@ -1,6 +1,29 @@
 
 include_guard()
 
+find_package(Python3 COMPONENTS Interpreter)
+if (NOT Python3_FOUND)
+	message(FATAL_ERROR "System python3 not found. Can't go on.")
+endif()
+
+set(SYSTEM_PYTHON3 ${Python3_Interpreter_FOUND})
+
+if (WIN32)
+	set(VENV_ACTIVATE "${RGE_HOME}/venv/Scripts/activate.bat")
+	set(VENV_PY "${RGE_HOME}/venv/Scripts/python.exe")
+	set(VENV_PIP "${RGE_HOME}/venv/Scripts/pip.exe")
+else()
+	set(VENV_ACTIVATE "${RGE_HOME}/venv/bin/activate")
+	set(VENV_PY "${RGE_HOME}/venv/bin/python")
+	set(VENV_PIP "${RGE_HOME}/venv/bin/pip")
+endif()
+
+if (NOT EXISTS ${VENV_ACTIVATE})
+	execute_process(COMMAND "${SYSTEM_PYTHON3} -m venv venv")
+	# todo install from requirements.txt
+endif()
+
+
 # ------------------------------------------------------------------------------------------------
 # Options
 # ------------------------------------------------------------------------------------------------
@@ -454,7 +477,7 @@ endfunction()
 # ---
 
 function (rge_end_game)
-	rge_submit_resources_def()
+#	rge_submit_resources_def()
 endfunction()
 
 function (rge_submit_material_shader GAME_NAME MATERIAL_SHADERS_DEF)
@@ -473,7 +496,7 @@ endfunction()
 # `rge_define_game` <GAME_NAME>
 #
 # * GAME_NAME    - the name of the game executable created.
-function (rge_begin_game GAME_NAME SRCS)
+function (rge_define_game GAME_NAME SRCS)
 
 	rge_reset_glob_vars()
 
@@ -488,29 +511,54 @@ function (rge_begin_game GAME_NAME SRCS)
 
 	add_executable(${GAME_NAME} ${FINAL_SRCS})
 
+	# Python configuration
+
+	set(ENV{RGE_HOME} "${RGE_HOME}")
+	set(ENV{GAME_SRC_DIR} "${CMAKE_CURRENT_SOURCE_DIR}")
+	#set(ENV{GAME_BIN_DIR} "$<TARGET_FILE_DIR:${GAME_NAME}>") We don't know the binary path during configuration-time!
+
+	set(BUILD_CFG_CMD ${VENV_PY} ${RGE_HOME}/build_cfg/cfg_exec.py -c ${RGE_HOME}/base_cfg.json ${CMAKE_CURRENT_SOURCE_DIR}/rge_cfg.json)
+
+	execute_process(
+		COMMAND ${BUILD_CFG_CMD} -o "on_cmake_configure"
+		WORKING_DIRECTORY "${RGE_HOME}"
+	)
+
+	add_custom_command(
+		TARGET ${GAME_NAME}
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E env
+				RGE_HOME=${RGE_HOME}
+				GAME_SRC_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+				GAME_BIN_DIR=$<TARGET_FILE_DIR:${GAME_NAME}>
+
+				${BUILD_CFG_CMD} -o on_post_build
+		COMMENT "[RGE] Executing post-build configuration script..."
+	)
+
 	# ----------------------------------------------------------------
 	# Assets
 	# ----------------------------------------------------------------
 
 	rge_set_g(RES_TYPES "Shader;Material;MaterialShader;Model;Texture")
 
-	rge_def_shader("Glsl_VS_BasicInst" ".rge/assets/cli/shaders/glsl/basic_inst.vert")
-	rge_req_shader("Glsl_VS_BasicInst")
+	#rge_def_shader("Glsl_VS_BasicInst" ".rge/assets/cli/shaders/glsl/basic_inst.vert")
+	#rge_req_shader("Glsl_VS_BasicInst")
 
-	rge_def_shader("Glsl_FS_IterLights" ".rge/assets/cli/shaders/glsl/iter_lights.frag")
+	#rge_def_shader("Glsl_FS_IterLights" ".rge/assets/cli/shaders/glsl/iter_lights.frag")
 
-	rge_def_material("Basic" ".rge/assets/cli/materials/basic.mat")
-	rge_def_material("Phong" ".rge/assets/cli/materials/phong.mat")
-	rge_def_material("Standard" ".rge/assets/cli/materials/standard.mat")
+	#rge_def_material("Basic" ".rge/assets/cli/materials/basic.mat")
+	#rge_def_material("Phong" ".rge/assets/cli/materials/phong.mat")
+	#rge_def_material("Standard" ".rge/assets/cli/materials/standard.mat")
 
-	rge_def_material_shader("Glsl_FS_IterLights_Basic" ".rge/assets/cli/material_shaders/glsl/iter_lights_basic.frag")
-	rge_compile_material_shader("Glsl_FS_IterLights" "Basic" "Glsl_FS_IterLights_Basic")
+	#rge_def_material_shader("Glsl_FS_IterLights_Basic" ".rge/assets/cli/material_shaders/glsl/iter_lights_basic.frag")
+	#rge_compile_material_shader("Glsl_FS_IterLights" "Basic" "Glsl_FS_IterLights_Basic")
 
-	rge_def_material_shader("Glsl_FS_IterLights_Phong" ".rge/assets/cli/material_shaders/glsl/iter_lights_phong.frag")
-	rge_compile_material_shader("Glsl_FS_IterLights" "Phong" "Glsl_FS_IterLights_Phong")
+	#rge_def_material_shader("Glsl_FS_IterLights_Phong" ".rge/assets/cli/material_shaders/glsl/iter_lights_phong.frag")
+	#rge_compile_material_shader("Glsl_FS_IterLights" "Phong" "Glsl_FS_IterLights_Phong")
 
-	rge_def_material_shader("Glsl_FS_IterLights_Standard" ".rge/assets/cli/material_shaders/glsl/iter_lights_standard.frag")
-	rge_compile_material_shader("Glsl_FS_IterLights" "Standard" "Glsl_FS_IterLights_Standard")
+	#rge_def_material_shader("Glsl_FS_IterLights_Standard" ".rge/assets/cli/material_shaders/glsl/iter_lights_standard.frag")
+	#rge_compile_material_shader("Glsl_FS_IterLights" "Standard" "Glsl_FS_IterLights_Standard")
 
 	# ----------------------------------------------------------------
 	# Dependencies

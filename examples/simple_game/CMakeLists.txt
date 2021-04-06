@@ -10,12 +10,4 @@ set(SRCS
 	"src/entry.hpp"
 )
 
-rge_begin_game(simple_game ${SRCS})
-
-rge_def_model("McLaren" "assets/models/McLaren.glb")
-rge_req_model("McLaren")
-
-rge_def_model("GumballAndDarwin" "assets/models/gumball_darwin.glb")
-rge_req_model("GumballAndDarwin")
-
-rge_end_game()
+rge_define_game(simple_game ${SRCS})

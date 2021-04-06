@@ -36,7 +36,7 @@ void MyGame::on_init()
 
     m_scene = new Node();
 
-    Node* gumball_darwin = loader.load_from_resource(resources::Model::GumballAndDarwin);
+    Node* gumball_darwin = loader.load_from_resource(resources::Model::GumballDarwin);
 	m_scene->m_children.push_back(gumball_darwin);
 
 	//Node* mc_laren = loader.load_from_resource("assets/models/McLaren.glb");

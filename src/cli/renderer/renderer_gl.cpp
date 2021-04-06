@@ -111,8 +111,8 @@ GLuint RendererGL::get_or_create_program(Material const* material)
 	{
 		GLuint program = glCreateProgram();
 
-		GLuint v_shader = load_shader(GL_VERTEX_SHADER, resources::Shader::Glsl_VS_BasicInst);
-		GLuint f_shader = load_material_shader(GL_FRAGMENT_SHADER, resources::Shader::Glsl_FS_IterLights, material);
+		GLuint v_shader = load_shader(GL_VERTEX_SHADER, resources::Shader::GLSL_VS_BasicInst);
+		GLuint f_shader = load_material_shader(GL_FRAGMENT_SHADER, resources::Shader::GLSL_FS_IterLights, material);
 
 		glAttachShader(program, v_shader);
 		glAttachShader(program, f_shader);

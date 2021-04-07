@@ -2,13 +2,13 @@
     "resources": {
         "Model": {
             "GumballDarwin": {
-                "path": "assets/models/gumball_darwin.glb",
+                "path": "resources/models/gumball_darwin.glb",
                 "generator": {
                     "type": "copy"
                 }
             },
             "McLaren": {
-                "path": "assets/models/McLaren.glb",
+                "path": "resources/models/McLaren.glb",
                 "generator": {
                     "type": "copy"
                 }

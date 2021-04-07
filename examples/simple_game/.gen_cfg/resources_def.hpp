@@ -32,18 +32,18 @@ McLaren,
 
 
 inline static void init() {
-rge::ResourceManager::register_resource_desc(Shader::GLSL_VS_BasicInst, ".rge/assets/cli/shaders/glsl/basic_inst.vert");
-rge::ResourceManager::register_resource_desc(Shader::GLSL_FS_IterLights, ".rge/assets/cli/shaders/glsl/iter_lights.frag");
-rge::ResourceManager::register_resource_desc(Material::Basic, ".rge/assets/cli/materials/basic.mat");
-rge::ResourceManager::register_resource_desc(Material::Phong, ".rge/assets/cli/materials/phong.mat");
-rge::ResourceManager::register_resource_desc(Material::Standard, ".rge/assets/cli/materials/standard.mat");
-rge::ResourceManager::register_resource_desc(MaterialShader::GLSL_FS_IterLights_Basic, ".rge/assets/cli/material_shaders/glsl/iter_lights_basic.frag");
+rge::ResourceManager::register_resource_desc(Shader::GLSL_VS_BasicInst, ".rge/resources/cli/shaders/glsl/basic_inst.vert");
+rge::ResourceManager::register_resource_desc(Shader::GLSL_FS_IterLights, ".rge/resources/cli/shaders/glsl/iter_lights.frag");
+rge::ResourceManager::register_resource_desc(Material::Basic, ".rge/resources/cli/materials/basic.mat");
+rge::ResourceManager::register_resource_desc(Material::Phong, ".rge/resources/cli/materials/phong.mat");
+rge::ResourceManager::register_resource_desc(Material::Standard, ".rge/resources/cli/materials/standard.mat");
+rge::ResourceManager::register_resource_desc(MaterialShader::GLSL_FS_IterLights_Basic, ".rge/resources/cli/material_shaders/glsl/iter_lights_basic.frag");
 rge::ResourceManager::register_resource_binary_assoc(Shader::GLSL_FS_IterLights, Material::Basic, MaterialShader::GLSL_FS_IterLights_Basic);
-rge::ResourceManager::register_resource_desc(MaterialShader::GLSL_FS_IterLights_Phong, ".rge/assets/cli/material_shaders/glsl/iter_lights_phong.frag");
+rge::ResourceManager::register_resource_desc(MaterialShader::GLSL_FS_IterLights_Phong, ".rge/resources/cli/material_shaders/glsl/iter_lights_phong.frag");
 rge::ResourceManager::register_resource_binary_assoc(Shader::GLSL_FS_IterLights, Material::Phong, MaterialShader::GLSL_FS_IterLights_Phong);
-rge::ResourceManager::register_resource_desc(MaterialShader::GLSL_FS_IterLights_Standard, ".rge/assets/cli/material_shaders/glsl/iter_lights_standard.frag");
+rge::ResourceManager::register_resource_desc(MaterialShader::GLSL_FS_IterLights_Standard, ".rge/resources/cli/material_shaders/glsl/iter_lights_standard.frag");
 rge::ResourceManager::register_resource_binary_assoc(Shader::GLSL_FS_IterLights, Material::Standard, MaterialShader::GLSL_FS_IterLights_Standard);
-rge::ResourceManager::register_resource_desc(Model::GumballDarwin, "assets/models/gumball_darwin.glb");
-rge::ResourceManager::register_resource_desc(Model::McLaren, "assets/models/McLaren.glb");
+rge::ResourceManager::register_resource_desc(Model::GumballDarwin, "resources/models/gumball_darwin.glb");
+rge::ResourceManager::register_resource_desc(Model::McLaren, "resources/models/McLaren.glb");
 }
 }

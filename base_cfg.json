@@ -2,29 +2,29 @@
     "resources": {
         "Shader": {
             "GLSL_VS_BasicInst": {
-                "path": ".rge/assets/cli/shaders/glsl/basic_inst.vert",
+                "path": ".rge/resources/cli/shaders/glsl/basic_inst.vert",
                 "generator": {
                     "type": "copy"
                 }
             },
             "GLSL_FS_IterLights": {
-                "path": ".rge/assets/cli/shaders/glsl/iter_lights.frag"
+                "path": ".rge/resources/cli/shaders/glsl/iter_lights.frag"
             }
         },
         "Material": {
             "Basic": {
-                "path": ".rge/assets/cli/materials/basic.mat"
+                "path": ".rge/resources/cli/materials/basic.mat"
             },
             "Phong": {
-                "path": ".rge/assets/cli/materials/phong.mat"
+                "path": ".rge/resources/cli/materials/phong.mat"
             },
             "Standard": {
-                "path": ".rge/assets/cli/materials/standard.mat"
+                "path": ".rge/resources/cli/materials/standard.mat"
             }
         },
         "MaterialShader": {
             "GLSL_FS_IterLights_Basic": {
-                "path": ".rge/assets/cli/material_shaders/glsl/iter_lights_basic.frag",
+                "path": ".rge/resources/cli/material_shaders/glsl/iter_lights_basic.frag",
                 "generator": {
                     "type": "compile_material_shader",
                     "shader": "GLSL_FS_IterLights",
@@ -36,7 +36,7 @@
                 }
             },
             "GLSL_FS_IterLights_Phong": {
-                "path": ".rge/assets/cli/material_shaders/glsl/iter_lights_phong.frag",
+                "path": ".rge/resources/cli/material_shaders/glsl/iter_lights_phong.frag",
                 "generator": {
                     "type": "compile_material_shader",
                     "shader": "GLSL_FS_IterLights",
@@ -48,7 +48,7 @@
                 }
             },
             "GLSL_FS_IterLights_Standard": {
-                "path": ".rge/assets/cli/material_shaders/glsl/iter_lights_standard.frag",
+                "path": ".rge/resources/cli/material_shaders/glsl/iter_lights_standard.frag",
                 "generator": {
                     "type": "compile_material_shader",
                     "shader": "GLSL_FS_IterLights",

@@ -1,6 +1,7 @@
 
 import shutil
 import os
+import shaderc
 
 
 def resolve_src_path(sym_path):
@@ -21,20 +22,44 @@ def resolve_dst_path(sym_path):
     return os.path.join(os.environ['GAME_BIN_DIR'], sym_path)
 
 
-def copy(resource, data):
-    src_path = resolve_src_path(resource['path'])
-    dst_path = resolve_dst_path(resource['path'])
-
+def resolve_dst_path_and_mkdir(sym_path):
+    dst_path = resolve_dst_path(sym_path)
     dst_dir = os.path.dirname(dst_path)
     if not os.path.exists(dst_dir):
         os.makedirs(dst_dir)
+    return dst_path
+
+
+def copy(resources, resource_name, resource, data):
+    src_path = resolve_src_path(resource['path'])
+    dst_path = resolve_dst_path_and_mkdir(resource['path'])
+
+    print(f"[RGE] Copying: {resource_name} -> {dst_path}")
 
     shutil.copy(src_path, dst_path)
 
 
-def compile_material_shader(resource, data):
-    # todo
-    pass
+def compile_material_shader(resources, resource_name, resource, data):
+
+    shader_name = data['shader']
+    material_name = data['material']
+    material_shader_name = resource_name
+
+    shader_src_path = resolve_src_path(resources['Shader'][shader_name]['path'])
+    material_src_path = resolve_src_path(resources['Material'][material_name]['path'])
+    material_shader_dst_path = resolve_dst_path_and_mkdir(resource['path'])
+
+    print(f"[RGE] Compiling material shader: {material_shader_name} -> {material_shader_dst_path}")
+
+    shader_f = open(shader_src_path, 'rt')
+    material_f = open(material_src_path, 'rt')
+    material_shader_f = open(material_shader_dst_path, 'w')
+
+    shaderc.process_material_shader(shader_f, material_f, material_shader_f)
+
+    shader_f.close()
+    material_f.close()
+    material_shader_f.close()
 
 
 def generate(resources):
@@ -50,7 +75,8 @@ def generate(resources):
                 if generator['type'] not in globals():
                     print("Generator `%s` is unknown." % generator['type'])
 
-                print("Generating %s (through `%s`)..." % (resource_name, generator['type']))
+                # print("Generating %s (through `%s`)..." % (resource_name, generator['type']))
                 gen_func = globals()[generator['type']]
-                gen_func(resource, generator)
-
+                gen_func(resources, resource_name, resource, generator)
+            else:
+                print(f"[RGE] Resource without generator: {resource_name}")

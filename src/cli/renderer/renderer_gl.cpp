@@ -4,6 +4,8 @@
 #include "resources/resource_provider.hpp"
 #include "material_serializer.hpp"
 
+#include <cstring>
+
 #include <iostream>
 #include <filesystem>
 

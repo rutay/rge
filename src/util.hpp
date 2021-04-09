@@ -20,10 +20,7 @@ struct Vec;
 template<typename T>
 struct Vec<3, T>
 {
-	union {
-		struct { float x, y, z; };
-		struct { float r, g, b; };
-	};
+    float x, y, z;
 };
 
 using Vec3 = Vec<3, float>;

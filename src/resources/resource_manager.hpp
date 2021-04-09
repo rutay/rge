@@ -32,17 +32,9 @@ namespace rge
 		}
 
 		template<typename R>
-		inline void register_resource_desc(R res, ResourceDescriptor res_desc)
+		inline void register_resource_desc(R resource, ResourceDescriptor descriptor)
 		{
-			detail::s_resource_descriptors.emplace(static_cast<Resource>(res), res_desc);
-		}
-
-		template<typename R>
-		inline void register_resource_desc(R res, std::filesystem::path res_path)
-		{
-			register_resource_desc(res, {
-				.m_path = res_path
-			});
+			detail::s_resource_descriptors.emplace(static_cast<Resource>(resource), descriptor);
 		}
 
 		template<typename R>

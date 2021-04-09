@@ -1,12 +1,14 @@
 
 include_guard()
 
+message("RGE_HOME: ${RGE_HOME}")
+
 find_package(Python3 COMPONENTS Interpreter)
 if (NOT Python3_FOUND)
 	message(FATAL_ERROR "System python3 not found. Can't go on.")
 endif()
 
-set(SYSTEM_PYTHON3 ${Python3_Interpreter_FOUND})
+set(SYSTEM_PYTHON3 ${Python3_EXECUTABLE})
 
 if (WIN32)
 	set(VENV_ACTIVATE "${RGE_HOME}/venv/Scripts/activate.bat")
@@ -19,10 +21,21 @@ else()
 endif()
 
 if (NOT EXISTS ${VENV_ACTIVATE})
-	execute_process(COMMAND "${SYSTEM_PYTHON3} -m venv venv")
+	message("Creating venv...")
+	execute_process(
+			COMMAND ${SYSTEM_PYTHON3} -m venv venv
+			WORKING_DIRECTORY ${RGE_HOME}
+	)
+
+	message("Installing pip requirements...")
+	execute_process(
+			COMMAND ${VENV_PIP} install -r requirements.txt
+			WORKING_DIRECTORY ${RGE_HOME}
+	)
 	# todo install from requirements.txt
 endif()
 
+set(OpenGL_GL_PREFERENCE "LEGACY")
 
 # ------------------------------------------------------------------------------------------------
 # Options

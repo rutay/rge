@@ -1,6 +1,7 @@
 [submodule "third_party/tinygltf"]
 	path = third_party/tinygltf
 	url = https://github.com/syoyo/tinygltf
+	branch = master
 [submodule "third_party/bgfx.cmake"]
 	path = third_party/bgfx.cmake
 	url = https://github.com/widberg/bgfx.cmake

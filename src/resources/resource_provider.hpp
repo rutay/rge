@@ -2,6 +2,7 @@
 #pragma once
 
 #include <filesystem>
+#include <vector>
 
 #include "resource.hpp"
 #include "resource_manager.hpp"

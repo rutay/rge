@@ -56,8 +56,10 @@ def create_resources_def_hpp(resources):
             ])
 
             resources_init.extend([
-                "rge::ResourceManager::register_resource_desc(%s::%s, \"%s\");" % (
-                    category_name, resource_name, resource["path"])
+                "rge::ResourceManager::register_resource_desc(%s::%s, %s);" % (
+                    category_name, resource_name,
+                    "{ .m_path = \"" + resource["path"] + "\"}"
+                )
             ])
 
             if "bin_assoc" in resource:

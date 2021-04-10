@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cmath>
+#include <stdint.h>
 
 namespace rge
 {
@@ -59,6 +60,16 @@ struct Vec<4, T>
 };
 
 using Vec4 = Vec<4, float>;
+
+    inline Vec4 rgba_f_from_hex(uint32_t hex)
+    {
+        return Vec4(
+                (float) ((hex >> 24) & 0xff) / 255.0f,
+                (float) ((hex >> 16) & 0xff) / 255.0f,
+                (float) ((hex >> 8) & 0xff) / 255.0f,
+                (float) (hex & 0xff) / 255.0f
+                );
+    }
 }
 
 // ------------------------------------------------------------------------------------------------

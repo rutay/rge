@@ -181,6 +181,9 @@ RendererGL::BakedGeometry& RendererGL::get_or_bake_geometry(Geometry const* geom
 
 void RendererGL::render(Node const* root_node, Camera const& camera)
 {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(m_clear_color.r, m_clear_color.g, m_clear_color.b, m_clear_color.a);
+
 	if (!m_baked_instances_by_root_node.contains(root_node))
 	{
 		std::unordered_map<Mesh const*, std::vector<Node const*>> nodes_by_mesh;

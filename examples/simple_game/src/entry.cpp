@@ -52,15 +52,24 @@ void MyGame::on_init()
 
 	m_renderer = Renderer::create();
 
-	SDL_SetRelativeMouseMode(SDL_TRUE);
+	//SDL_SetRelativeMouseMode(SDL_TRUE); todo
 
 	m_free_camera.m_aspect_ratio = float(m_width) / m_height;
 }
 
-void MyGame::on_event(SDL_Event &event)
+void MyGame::on_event(SDL_Event& event)
 {
-	m_camera_movement_ctrl.on_sdl_event(event);
-	m_camera_orientation_ctrl.on_sdl_event(m_free_camera, event);
+    if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_ESCAPE)
+    {
+        if (SDL_GetRelativeMouseMode()) {
+            SDL_SetRelativeMouseMode(SDL_FALSE);
+        } else {
+            m_should_close = true;
+        }
+    }
+
+    m_camera_movement_ctrl.on_sdl_event(event);
+    m_camera_orientation_ctrl.on_sdl_event(m_free_camera, event);
 }
 
 void MyGame::on_update(double dt)

@@ -9,31 +9,39 @@
 #include <iostream>
 #include <filesystem>
 
-#define RGE_BUFFER_IDX_LIGHTS   1
-#define RGE_BUFFER_IDX_MATERIAL 2
-
 #define RGE_MAX_MATERIAL_BYTE_SIZE 1024
-
 using namespace rge;
+
+#define GL_CHECK(_func_call) \
+    { \
+        _func_call; \
+        GLenum _err = glGetError(); \
+        if (_err != GL_NO_ERROR) {  \
+            printf("%s (line %d) - %s 0x%x\n", __FILE__, __LINE__, #_func_call, _err); \
+        } \
+    }
 
 GLuint load_shader_from_source(GLenum type, char const* src)
 {
 	GLuint shader = glCreateShader(type);
-	glShaderSource(shader, 1, &src, NULL);
-	glCompileShader(shader);
+
+    GL_CHECK(glShaderSource(shader, 1, &src, nullptr));
+    GL_CHECK(glCompileShader(shader));
 
 	GLint success = 0;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+	GL_CHECK(glGetShaderiv(shader, GL_COMPILE_STATUS, &success));
 	if (success == GL_FALSE)
 	{
 		GLint log_length = 0;
-		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &log_length);
+		GL_CHECK(glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &log_length));
 
 		std::vector<GLchar> log(log_length);
-		glGetShaderInfoLog(shader, log_length, &log_length, log.data());
+		GL_CHECK(glGetShaderInfoLog(shader, log_length, &log_length, log.data()));
 
-		glDeleteShader(shader);
-		return NULL;
+		printf("Shader %d compilation issue: %s\n", type, log.data());
+
+        GL_CHECK(glDeleteShader(shader));
+		exit(5);
 	}
 
 	return shader;
@@ -41,9 +49,9 @@ GLuint load_shader_from_source(GLenum type, char const* src)
 
 GLuint load_shader(GLenum type, resources::Shader shader)
 {
-	std::vector<char> shader_src;
-	ResourceProvider::read(shader, shader_src);
-	return load_shader_from_source(type, reinterpret_cast<char const*>(shader_src.data()));
+    std::string src;
+	ResourceProvider::read_to_string((Resource) shader, src);
+	return load_shader_from_source(type, src.c_str());
 }
 
 GLuint load_material_shader(GLenum type, resources::Shader shader, Material const* material)
@@ -78,56 +86,56 @@ void buffer_data_from_accessor(GLenum buffer_type, Accessor const* accessor, GLe
 	size_t size =
 		accessor->m_buffer_view->m_byte_length;
 
-	glBufferData(buffer_type, size, data, buffer_usage);
+	//printf("Alloc data on VBO: %d\n", (GLsizei) size);
+
+	GL_CHECK(glBufferData(buffer_type, (GLsizei) size, data, buffer_usage));
 }
 
-RendererGL::BakedAttribute bake_attrib(AttribType::Enum attrib_type, Accessor const* accessor)
+GLuint RendererGL::get_or_create_mat_program(Material const* material)
 {
-	RendererGL::BakedAttribute result;
+    resources::Material mat_res = material->get_resource();
 
-	glGenVertexArrays(1, &result.m_vertex_array);
-	glBindVertexArray(result.m_vertex_array);
-
-	glEnableVertexAttribArray(attrib_type);
-	glVertexAttribPointer(
-		attrib_type,
-		accessor->m_num_components,
-		parse_component_type(accessor->m_component_type),
-		false,
-		accessor->get_value_byte_size(),
-		NULL
-	);
-
-	glGenBuffers(1, &result.m_vertex_buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, result.m_vertex_buffer);
-	buffer_data_from_accessor(GL_ARRAY_BUFFER, accessor, GL_STATIC_DRAW);
-
-	glBindVertexArray(NULL);
-
-	return result;
-}
-
-GLuint RendererGL::get_or_create_program(Material const* material)
-{
-	if (!m_program_by_material_type[material->get_resource()])
+	if (!m_program_by_material_type.contains(mat_res))
 	{
 		GLuint program = glCreateProgram();
 
 		GLuint v_shader = load_shader(GL_VERTEX_SHADER, resources::Shader::GLSL_VS_BasicInst);
 		GLuint f_shader = load_material_shader(GL_FRAGMENT_SHADER, resources::Shader::GLSL_FS_IterLights, material);
 
-		glAttachShader(program, v_shader);
-		glAttachShader(program, f_shader);
+        GL_CHECK(glAttachShader(program, v_shader));
+        GL_CHECK(glAttachShader(program, f_shader));
 
-		glLinkProgram(program);
+        GL_CHECK(glLinkProgram(program));
 
-		m_program_by_material_type[material->get_resource()] = program;
+        GLint is_linked = 0;
+        GL_CHECK(glGetProgramiv(program, GL_LINK_STATUS, &is_linked));
+        if (is_linked == GL_FALSE)
+        {
+            GLint max_len = 0;
+            GL_CHECK(glGetProgramiv(program, GL_INFO_LOG_LENGTH, &max_len));
+
+            std::vector<GLchar> info_log(max_len);
+            GL_CHECK(glGetProgramInfoLog(program, max_len, &max_len, &info_log[0]));
+
+            printf("Couldn't link the GLSL program for vertex_shader=%d fragment_shader=%d material=%d: %s\n",
+                   resources::Shader::GLSL_VS_BasicInst,
+                   resources::Shader::GLSL_FS_IterLights,
+                   mat_res,
+                   info_log.data()
+                   );
+
+            exit(3);
+        }
+
+        //printf("Program created for material type: 0x%x\n", mat_res);
+
+		m_program_by_material_type[mat_res] = program;
 	}
 
-	return m_program_by_material_type[material->get_resource()];
+	return m_program_by_material_type[mat_res];
 }
 
-GLuint RendererGL::get_or_bake_material_ubo(Material const* material)
+GLuint RendererGL::get_or_bake_mat_ubo(Material const* material)
 {
 	if (!m_ubo_by_material.contains(material))
 	{
@@ -137,9 +145,11 @@ GLuint RendererGL::get_or_bake_material_ubo(Material const* material)
 		MaterialSerializerManager::serialize(material, data, size);
 
 		GLuint uniform_buffer;
-		glGenBuffers(1, &uniform_buffer);
-		glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer);
-		glBufferData(GL_UNIFORM_BUFFER, size, data, GL_STATIC_DRAW);
+        GL_CHECK(glGenBuffers(1, &uniform_buffer));
+        GL_CHECK(glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer));
+        GL_CHECK(glBufferData(GL_UNIFORM_BUFFER, size, data, GL_STATIC_DRAW));
+
+        //printf("Material baked: %p\n", material);
 
 		m_ubo_by_material.insert({ material, uniform_buffer });
 	}
@@ -147,176 +157,167 @@ GLuint RendererGL::get_or_bake_material_ubo(Material const* material)
 	return m_ubo_by_material[material];
 }
 
+RendererGL::BakedAttribute bake_attrib(AttribType::Enum attrib_type, Accessor const* accessor)
+{
+    RendererGL::BakedAttribute res;
+
+    GL_CHECK(glGenBuffers(1, &res.m_vbo));
+    GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, res.m_vbo));
+    buffer_data_from_accessor(GL_ARRAY_BUFFER, accessor, GL_STATIC_DRAW);
+
+    GL_CHECK(glGenVertexArrays(1, &res.m_vao));
+    GL_CHECK(glBindVertexArray(res.m_vao));
+
+    GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, res.m_vbo));
+
+    GL_CHECK(glEnableVertexAttribArray(attrib_type));
+    GL_CHECK(glVertexAttribPointer(
+            attrib_type,
+            accessor->m_num_components,
+            parse_component_type(accessor->m_component_type),
+            false,
+            accessor->get_value_byte_size(),
+            nullptr
+    ));
+
+    return res;
+}
+
 RendererGL::BakedGeometry& RendererGL::get_or_bake_geometry(Geometry const* geometry)
 {
 	if (!m_baked_geometries.contains(geometry))
 	{
-		RendererGL::BakedGeometry baked_geometry;
+		RendererGL::BakedGeometry baked_geom;
 
-		for (int attrib_type = 0; attrib_type < AttribType::Count; attrib_type++) {
-			if (geometry->m_attributes[attrib_type]) {
-				baked_geometry.m_baked_attributes[attrib_type] =
-					bake_attrib(
-						static_cast<AttribType::Enum>(attrib_type),
-						geometry->m_attributes[attrib_type]
-					);
+		for (int attrib_type = 0; attrib_type < AttribType::Count; attrib_type++)
+		{
+			if (geometry->m_attributes[attrib_type])
+			{
+			    BakedAttribute baked_attrib = bake_attrib(static_cast<AttribType::Enum>(attrib_type), geometry->m_attributes[attrib_type]);
+                baked_geom.m_baked_attribs.push_back(baked_attrib);
 			}
 		}
 
-		if (geometry->m_indices) {
+		if (geometry->m_indices)
+		{
 			Accessor const* accessor = geometry->m_indices;
 
-			baked_geometry.m_indices_type = parse_component_type(accessor->m_component_type);
+            baked_geom.m_ebo_elem_type = parse_component_type(accessor->m_component_type);
+            baked_geom.m_ebo_elem_count = accessor->m_count;
 
-			glGenBuffers(1, &baked_geometry.m_indices_buffer);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, baked_geometry.m_indices_buffer);
-			buffer_data_from_accessor(GL_ARRAY_BUFFER, accessor, GL_STATIC_DRAW);
+            GL_CHECK(glGenBuffers(1, &baked_geom.m_ebo));
+            GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, baked_geom.m_ebo));
+			buffer_data_from_accessor(GL_ELEMENT_ARRAY_BUFFER, accessor, GL_STATIC_DRAW);
 		}
 
-		m_baked_geometries.insert({ geometry, baked_geometry });
+		//printf("Geometry baked: %p\n", geometry);
+
+		m_baked_geometries.emplace(geometry, baked_geom);
 	}
 
 	return m_baked_geometries[geometry];
 }
 
-void RendererGL::render(Node const* root_node, Camera const& camera)
+void RendererGL::bake_scene_graph(Node const* scene_graph)
 {
-    glClear(GL_COLOR_BUFFER_BIT);
+    if (m_baked_instances_by_root_node.contains(scene_graph))
+    {
+        return;
+    }
+
+    std::unordered_map<Mesh const*, std::vector<Node const*>> nodes_by_mesh;
+    std::vector<Node const*> nodes_with_lights;
+
+    scene_graph->traverse_const([&](Node const* node) {
+        for (Mesh const* mesh : node->m_meshes)
+        {
+            nodes_by_mesh.emplace(mesh, std::vector<Node const*>());
+            nodes_by_mesh[mesh].push_back(node);
+        }
+
+        if (node->m_light)
+            nodes_with_lights.push_back(node);
+    });
+
+    std::vector<std::tuple<Mesh const*, GLuint>> mesh_instances;
+    for (auto& [mesh, nodes] : nodes_by_mesh)
+    {
+        // material
+        if (mesh->m_material)
+        {
+            get_or_create_mat_program(mesh->m_material);
+            get_or_bake_mat_ubo(mesh->m_material);
+        }
+
+        // geometry
+        RendererGL::BakedGeometry& baked_geom = get_or_bake_geometry(mesh->m_geometry);
+
+        size_t size = 16 * nodes.size() * sizeof(float);
+        float* data = (float*) malloc(size);
+        for (int i = 0; i < nodes.size(); i++) {
+            std::memcpy(
+                    &data[i * 16],
+                    nodes[i]->m_world_transform,
+                    16 * sizeof(float)
+            );
+        }
+
+        GLuint instance_data_buffer;
+        GL_CHECK(glGenBuffers(1, &instance_data_buffer));
+        GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, instance_data_buffer));
+        GL_CHECK(glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr) size, data, GL_STATIC_DRAW));
+
+        free(data);
+
+        mesh_instances.emplace_back(mesh, instance_data_buffer);
+        baked_geom.m_ibo_inst_count = nodes.size();
+    }
+
+    m_baked_instances_by_root_node.emplace(scene_graph, mesh_instances);
+}
+
+
+void RendererGL::render(Node const* scene_graph, Camera const& camera)
+{
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(m_clear_color.r, m_clear_color.g, m_clear_color.b, m_clear_color.a);
 
-	if (!m_baked_instances_by_root_node.contains(root_node))
+    bake_scene_graph(scene_graph);
+
+	std::vector<std::tuple<Mesh const*, GLuint>>& mesh_instances = m_baked_instances_by_root_node[scene_graph];
+
+	for (auto& [mesh, ibo] : mesh_instances)
 	{
-		std::unordered_map<Mesh const*, std::vector<Node const*>> nodes_by_mesh;
-		std::vector<Node const*> nodes_with_lights;
+		GLuint program = get_or_create_mat_program(mesh->m_material);
+        GL_CHECK(glUseProgram(program));
 
-		root_node->traverse_const([&](Node const* node) {
-			for (Mesh const* mesh : node->m_meshes)
-			{
-				nodes_by_mesh.insert({ mesh, std::vector<Node const*>() });
-				nodes_by_mesh[mesh].push_back(node);
-			}
+        GLuint material_ubo = get_or_bake_mat_ubo(mesh->m_material);
+        //GL_CHECK(glBindBufferBase(GL_UNIFORM_BUFFER, RGE_BUFFER_IDX_MATERIAL, material_ubo));
 
-			if (node->m_light) {
-				nodes_with_lights.push_back(node);
-			}
-		});
+		auto& baked_geom = get_or_bake_geometry(mesh->m_geometry);
 
-		//
-
-		std::vector<std::tuple<Mesh const*, GLuint>> mesh_instances;
-
-		for (auto& [mesh, nodes] : nodes_by_mesh)
+		for (RendererGL::BakedAttribute& baked_attrib : baked_geom.m_baked_attribs) // Attributes
 		{
-			get_or_bake_geometry(mesh->m_geometry);
-
-			size_t size = 16 * nodes.size() * sizeof(float);
-			float* data = (float*) malloc(size);
-			for (int i = 0; i < nodes.size(); i++) {
-				std::memcpy(
-					&data[i * 16],
-					nodes[i]->m_world_transform,
-					16 * sizeof(float)
-				);
-			}
-
-			GLuint instance_data_buffer;
-			glGenBuffers(1, &instance_data_buffer);
-			glBindBuffer(GL_ARRAY_BUFFER, instance_data_buffer);
-			glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-
-			free(data);
-
-			mesh_instances.emplace_back(mesh, instance_data_buffer);
-		}
-
-		m_baked_instances_by_root_node.emplace(root_node, mesh_instances);
-
-		//
-
-		struct UBOLight
-		{
-			Vec3 position;
-			Vec3 color;
-			float intensity;
-
-			GLint type;
-			Vec4 data[2];
-		};
-
-		UBOLight* data = (UBOLight*) malloc(nodes_with_lights.size() * sizeof(UBOLight));
-		for (int i = 0; i < nodes_with_lights.size(); i++)
-		{
-			Node const* node = nodes_with_lights[i];
-			Light const* light = node->m_light;
-
-			data[i].position = node->m_position;
-			data[i].color = light->m_color;
-			data[i].intensity = light->m_intensity;
-			data[i].type = (GLuint) light->m_type;
-
-			if (light->m_type == LightType::POINT)
-			{
-				PointLight const* point_light = static_cast<PointLight const*>(light);
-				data[i].data->x = point_light->m_radius;
-			}
-			else if (light->m_type == LightType::DIRECTIONAL)
-			{
-				DirectionalLight const* directional_light = static_cast<DirectionalLight const*>(light);
-				data[i].data[0] = directional_light->m_direction;
-			}
-			else if (light->m_type == LightType::SPOT)
-			{
-				SpotLight const* spot_light = static_cast<SpotLight const*>(light);
-				data[i].data[0] = Vec4(
-					spot_light->m_direction,
-					spot_light->m_angle
-				);
-			}
-			else
-			{
-				data[i].type = -1; // Unsupported light type
-				continue;
-			}
-		}
-
-		GLuint lights_ubo;
-		glGenBuffers(1, &lights_ubo);
-		glBindBuffer(GL_UNIFORM_BUFFER, lights_ubo);
-		glBufferData(GL_UNIFORM_BUFFER, nodes_with_lights.size() * sizeof(UBOLight), data, GL_STATIC_DRAW);
-
-		free(data);
-
-		m_baked_lights_by_root_node.insert({ root_node, lights_ubo });
-	}
-
-	auto& mesh_instances = m_baked_instances_by_root_node[root_node];
-	for (auto& [mesh, instance_data_buffer] : mesh_instances)
-	{
-		GLuint program = get_or_create_program(mesh->m_material);
-		GLuint material_ubo = get_or_bake_material_ubo(mesh->m_material);
-		glUseProgram(program);
-
-		glBindBufferBase(GL_UNIFORM_BUFFER, RGE_BUFFER_IDX_LIGHTS, m_baked_lights_by_root_node[root_node]); // Lights
-		glBindBufferBase(GL_UNIFORM_BUFFER, RGE_BUFFER_IDX_MATERIAL, material_ubo); // Material
-
-		auto& baked_geometry = get_or_bake_geometry(mesh->m_geometry);
-
-		for (RendererGL::BakedAttribute& baked_attrib : baked_geometry.m_baked_attributes) // Attributes
-		{
-			glBindVertexArray(baked_attrib.m_vertex_array);
+			GL_CHECK(glBindVertexArray(baked_attrib.m_vao));
 			//glBindBuffer(GL_ARRAY_BUFFER, baked_attrib.m_vertex_buffer);
 		}
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, baked_geometry.m_indices_buffer); // Indices
+        glDisableVertexAttribArray(AttribType::Enum::NORMAL);
+		glVertexAttrib3f(AttribType::Enum::NORMAL, 0.0f, 1.0f, 0.0f);
 
-		glBindBuffer(GL_ARRAY_BUFFER, instance_data_buffer); // Instances
+        glDisableVertexAttribArray(AttribType::Enum::COLOR_0);
+        glVertexAttrib3f(AttribType::Enum::COLOR_0, 0.0f, 1.0f, 0.0f);
 
-		glDrawElements(
-			GL_TRIANGLES,
-			baked_geometry.m_instances_count,
-			baked_geometry.m_indices_type,
-			NULL
-		);
+		GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, baked_geom.m_ebo));
+        GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ibo));
+
+        GL_CHECK(glDrawElementsInstanced(
+                GL_TRIANGLES,
+                baked_geom.m_ebo_elem_count,
+                baked_geom.m_ebo_elem_type,
+                nullptr,
+                baked_geom.m_ibo_inst_count
+                ));
 	}
 }
 

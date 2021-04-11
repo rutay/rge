@@ -44,5 +44,20 @@ namespace ResourceProvider
 		buffer.resize(size);
 		return read(path, buffer.data());
 	}
+
+	inline int read_to_string(Resource resource, std::string& buffer)
+    {
+        int size = get_size(resource); // todo req path once
+        if (size < 0)
+            return size;
+
+	    buffer.resize(size + 1);
+	    read(resource, buffer.data());
+
+	    // Resize will zero all the bytes for the set size by itself.
+	    //buffer[size] = '\0';
+
+	    return size;
+    }
 };
 }

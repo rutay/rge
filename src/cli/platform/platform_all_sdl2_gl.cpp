@@ -10,6 +10,13 @@
 
 using namespace rge;
 
+void GLAPIENTRY gl_debug_message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+{
+    fprintf( stdout, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+             ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
+             type, severity, message );
+}
+
 int rge::boot(Game &game, int argc, char *argv[])
 {
 	rge::init();
@@ -42,8 +49,10 @@ int rge::boot(Game &game, int argc, char *argv[])
 
     // OpenGL 3.2 profile for compatibility with WebGL
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4); // to have access to debugging features
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 
@@ -59,6 +68,10 @@ int rge::boot(Game &game, int argc, char *argv[])
 
     // Use v-sync
     SDL_GL_SetSwapInterval(1);
+
+    // Debug handler
+    //glEnable(GL_DEBUG_OUTPUT);
+    //glDebugMessageCallback(gl_debug_message_callback, 0);
 
     game.init();
 
@@ -81,6 +94,7 @@ int rge::boot(Game &game, int argc, char *argv[])
 		game.render();
 
         SDL_GL_SwapWindow(window);
+        SDL_Delay(1);
 	}
 
 	SDL_GL_DeleteContext(gl_context);

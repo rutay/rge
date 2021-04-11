@@ -1,5 +1,8 @@
 #version 300 es
 
+precision highp float;
+precision highp int;
+
 in vec3 v_position;
 in vec3 v_normal;
 in vec3 v_color;
@@ -22,7 +25,7 @@ struct Light
 layout(std140) uniform rge_LightBuffer_ubo
 {
     Light lights[MAX_LIGHT_BUFFER_SIZE];
-    uint lights_count;
+    int lights_count;
 };
 
 #material

@@ -14,24 +14,22 @@ namespace rge
 {
 class RendererGL : public Renderer
 {
-protected:
-	SDL_GLContext m_gl_context;
-
 public:
 	struct BakedAttribute
 	{
-		GLuint m_vertex_array;
-		GLuint m_vertex_buffer;
+		GLuint m_vao;
+		GLuint m_vbo;
 	};
 
 	struct BakedGeometry
 	{
-		BakedAttribute m_baked_attributes[AttribType::Count];
+	    std::vector<BakedAttribute> m_baked_attribs;
 
-		GLenum m_indices_type;
-		GLuint m_indices_buffer;
+        GLuint m_ebo;
+		GLenum m_ebo_elem_type;
+		size_t m_ebo_elem_count;
 
-		size_t m_instances_count;
+		size_t m_ibo_inst_count;
 	};
 
 	std::unordered_map<Geometry const*, BakedGeometry> m_baked_geometries;
@@ -41,9 +39,10 @@ public:
 	std::unordered_map<resources::Material, GLuint> m_program_by_material_type;
 	std::unordered_map<Material const*, GLuint> m_ubo_by_material;
 
+	void bake_scene_graph(Node const* scene_graph);
 	BakedGeometry& get_or_bake_geometry(Geometry const* geometry);
-	GLuint get_or_create_program(Material const* material);
-	GLuint get_or_bake_material_ubo(Material const* material);
+	GLuint get_or_create_mat_program(Material const* material);
+	GLuint get_or_bake_mat_ubo(Material const* material);
 
 	void render(Node const* root_node, Camera const& camera) override;
 };

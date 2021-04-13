@@ -144,14 +144,14 @@ GLuint RendererGL::get_or_bake_mat_ubo(Material const* material)
 
 		MaterialSerializerManager::serialize(material, data, size);
 
-		GLuint uniform_buffer;
-        GL_CHECK(glGenBuffers(1, &uniform_buffer));
-        GL_CHECK(glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer));
+		GLuint ubo;
+        GL_CHECK(glGenBuffers(1, &ubo));
+        GL_CHECK(glBindBuffer(GL_UNIFORM_BUFFER, ubo));
         GL_CHECK(glBufferData(GL_UNIFORM_BUFFER, size, data, GL_STATIC_DRAW));
 
         //printf("Material baked: %p\n", material);
 
-		m_ubo_by_material.insert({ material, uniform_buffer });
+		m_ubo_by_material.emplace(material, ubo);
 	}
 
 	return m_ubo_by_material[material];
@@ -226,7 +226,7 @@ void RendererGL::bake_scene_graph(Node const* scene_graph)
     }
 
     std::unordered_map<Mesh const*, std::vector<Node const*>> nodes_by_mesh;
-    std::vector<Node const*> nodes_with_lights;
+    std::vector<Light> lights;
 
     scene_graph->traverse_const([&](Node const* node) {
         for (Mesh const* mesh : node->m_meshes)
@@ -235,50 +235,98 @@ void RendererGL::bake_scene_graph(Node const* scene_graph)
             nodes_by_mesh[mesh].push_back(node);
         }
 
-        if (node->m_light)
-            nodes_with_lights.push_back(node);
+        if (node->m_light) {
+			lights.push_back(*node->m_light);
+		}
     });
 
+    // Lights
+    GLuint lights_ubo;
+    glGenBuffers(1, &lights_ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, lights_ubo);
+    glBufferData(GL_UNIFORM_BUFFER, lights.size() * sizeof(Light), lights.data(), GL_STATIC_DRAW);
+	m_lights_ubo_by_scene_graph.emplace(scene_graph, LightsUBO{
+		.m_idx = lights_ubo,
+		.m_lights_count = lights.size()
+	});
+
+	// Meshes
     std::vector<std::tuple<Mesh const*, GLuint>> mesh_instances;
     for (auto& [mesh, nodes] : nodes_by_mesh)
     {
-        // material
+        // Material
         if (mesh->m_material)
         {
             get_or_create_mat_program(mesh->m_material);
             get_or_bake_mat_ubo(mesh->m_material);
         }
 
-        // geometry
+        // Geometry
         RendererGL::BakedGeometry& baked_geom = get_or_bake_geometry(mesh->m_geometry);
 
-        size_t size = 16 * nodes.size() * sizeof(float);
-        float* data = (float*) malloc(size);
+        // Instances
+        std::vector<float> inst_data(16 * nodes.size());
+        float* inst_data_ptr = inst_data.data();
+
         for (int i = 0; i < nodes.size(); i++) {
-            std::memcpy(
-                    &data[i * 16],
-                    nodes[i]->m_world_transform,
-                    16 * sizeof(float)
-            );
+        	float const* node_transf = nodes[i]->m_world_transform;
+        	std::memcpy(
+				inst_data_ptr,
+        		node_transf,
+        		16 * sizeof(float)
+        	);
+			inst_data_ptr += 16;
         }
 
-        GLuint instance_data_buffer;
-        GL_CHECK(glGenBuffers(1, &instance_data_buffer));
-        GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, instance_data_buffer));
-        GL_CHECK(glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr) size, data, GL_STATIC_DRAW));
+        GLuint ibo;
+        GL_CHECK(glGenBuffers(1, &ibo));
+        GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ibo));
+        GL_CHECK(glBufferData(GL_ARRAY_BUFFER, inst_data.size() * sizeof(float), inst_data.data(), GL_STATIC_DRAW));
 
-        free(data);
-
-        mesh_instances.emplace_back(mesh, instance_data_buffer);
+        mesh_instances.emplace_back(mesh, ibo);
         baked_geom.m_ibo_inst_count = nodes.size();
     }
 
     m_baked_instances_by_root_node.emplace(scene_graph, mesh_instances);
 }
 
+void bind_per_instance_attribs()
+{
+	// todo create a vao for that maybe?
+
+	static const int c_i_model_attr = 8;
+
+	GLuint attrib_loc;
+
+	// i_model_0
+	attrib_loc = c_i_model_attr;
+	GL_CHECK(glEnableVertexAttribArray(attrib_loc));
+	GL_CHECK(glVertexAttribPointer(attrib_loc, 4, GL_FLOAT, false, sizeof(GLfloat) * 16, (void*) 0));
+	glVertexAttribDivisor(attrib_loc, 1);
+
+	// i_model_1
+	attrib_loc = c_i_model_attr + 1;
+	GL_CHECK(glEnableVertexAttribArray(attrib_loc));
+	GL_CHECK(glVertexAttribPointer(attrib_loc, 4, GL_FLOAT, false, sizeof(GLfloat) * 16, (void*) (sizeof(GLfloat) * 4)));
+	glVertexAttribDivisor(attrib_loc, 1);
+
+	// i_model_2
+	attrib_loc = c_i_model_attr + 2;
+	GL_CHECK(glEnableVertexAttribArray(attrib_loc));
+	GL_CHECK(glVertexAttribPointer(attrib_loc, 4, GL_FLOAT, false, sizeof(GLfloat) * 16, (void*) (sizeof(GLfloat) * (4 + 4))));
+	glVertexAttribDivisor(attrib_loc, 1);
+
+	// i_model_3
+	attrib_loc = c_i_model_attr + 3;
+	GL_CHECK(glEnableVertexAttribArray(attrib_loc));
+	GL_CHECK(glVertexAttribPointer(attrib_loc, 4, GL_FLOAT, false, sizeof(GLfloat) * 16, (void*) (sizeof(GLfloat) * (4 + 4 + 4))));
+	glVertexAttribDivisor(attrib_loc, 1);
+}
 
 void RendererGL::render(Node const* scene_graph, Camera const& camera)
 {
+	glEnable(GL_DEPTH_TEST);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(m_clear_color.r, m_clear_color.g, m_clear_color.b, m_clear_color.a);
 
@@ -289,11 +337,34 @@ void RendererGL::render(Node const* scene_graph, Camera const& camera)
 	for (auto& [mesh, ibo] : mesh_instances)
 	{
 		GLuint program = get_or_create_mat_program(mesh->m_material);
-        GL_CHECK(glUseProgram(program));
+		GL_CHECK(glUseProgram(program));
 
+		float camera_view[16], camera_proj[16];
+		camera.view_matrix(camera_view);
+		camera.projection_matrix(camera_proj);
+
+		GLint u_camera_view = glGetUniformLocation(program, "u_camera_view");
+		GLint u_camera_projection = glGetUniformLocation(program, "u_camera_projection");
+		GL_CHECK(glUniformMatrix4fv(u_camera_view, 1, GL_FALSE, camera_view));
+		GL_CHECK(glUniformMatrix4fv(u_camera_projection, 1, GL_FALSE, camera_proj));
+
+		// Material
         GLuint material_ubo = get_or_bake_mat_ubo(mesh->m_material);
-        //GL_CHECK(glBindBufferBase(GL_UNIFORM_BUFFER, RGE_BUFFER_IDX_MATERIAL, material_ubo));
+		glUniformBlockBinding(program, glGetUniformBlockIndex(program, "rge_b_material"), 0);
+		GL_CHECK(glBindBuffer(GL_UNIFORM_BUFFER, material_ubo));
+        GL_CHECK(glBindBufferBase(GL_UNIFORM_BUFFER, 0, material_ubo));
 
+        // Lights
+		LightsUBO lights_ubo = m_lights_ubo_by_scene_graph[scene_graph];
+
+		GLint u_lights_count = glGetUniformLocation(program, "u_lights_count");
+		GL_CHECK(glUniform1i(u_lights_count, lights_ubo.m_lights_count));
+
+		glUniformBlockBinding(program, glGetUniformBlockIndex(program, "rge_b_lights"), 1);
+		GL_CHECK(glBindBuffer(GL_UNIFORM_BUFFER, lights_ubo.m_idx));
+		GL_CHECK(glBindBufferBase(GL_UNIFORM_BUFFER, 1, lights_ubo.m_idx));
+
+		// Geometry
 		auto& baked_geom = get_or_bake_geometry(mesh->m_geometry);
 
 		for (RendererGL::BakedAttribute& baked_attrib : baked_geom.m_baked_attribs) // Attributes
@@ -302,14 +373,10 @@ void RendererGL::render(Node const* scene_graph, Camera const& camera)
 			//glBindBuffer(GL_ARRAY_BUFFER, baked_attrib.m_vertex_buffer);
 		}
 
-        glDisableVertexAttribArray(AttribType::Enum::NORMAL);
-		glVertexAttrib3f(AttribType::Enum::NORMAL, 0.0f, 1.0f, 0.0f);
-
-        glDisableVertexAttribArray(AttribType::Enum::COLOR_0);
-        glVertexAttrib3f(AttribType::Enum::COLOR_0, 0.0f, 1.0f, 0.0f);
-
 		GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, baked_geom.m_ebo));
+
         GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ibo));
+		bind_per_instance_attribs();
 
         GL_CHECK(glDrawElementsInstanced(
                 GL_TRIANGLES,

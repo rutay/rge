@@ -51,17 +51,17 @@ bool Node::is_parent() const
 
 void Node::update_position_rotation_scale_from_local_transform()
 {
-	m_position = {
-		.x = m_local_transform[12],
-		.y = m_local_transform[13],
-		.z = m_local_transform[14]
-	};
+	m_position = Vec3(
+		m_local_transform[12],
+		m_local_transform[13],
+		m_local_transform[14]
+	);
 	m_rotation = { }; // todo
-	m_scale = {
-		.x = m_local_transform[0],
-		.y = m_local_transform[5],
-		.z = m_local_transform[10]
-	};
+	m_scale = Vec3(
+		m_local_transform[0],
+		m_local_transform[5],
+		m_local_transform[10]
+	);
 }
 
 void Node::update_local_transform()

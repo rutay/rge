@@ -1,4 +1,3 @@
-
 import shutil
 import os
 import shaderc
@@ -39,8 +38,16 @@ def copy(resources, resource_name, resource, data):
     shutil.copy(src_path, dst_path)
 
 
-def compile_material_shader(resources, resource_name, resource, data):
+def compile_shader(resources, resource_name, resource, data):
+    src_path = resolve_src_path(resource['path'])
+    dst_path = resolve_dst_path_and_mkdir(resource['path'])
 
+    out = shaderc.proc_shader(src_path)
+    with open(dst_path, "wt") as out_f:
+        out_f.write(out)
+
+
+def compile_material_shader(resources, resource_name, resource, data):
     shader_name = data['shader']
     material_name = data['material']
     material_shader_name = resource_name
@@ -51,15 +58,9 @@ def compile_material_shader(resources, resource_name, resource, data):
 
     print(f"[RGE] Compiling material shader: {material_shader_name} -> {material_shader_dst_path}")
 
-    shader_f = open(shader_src_path, 'rt')
-    material_f = open(material_src_path, 'rt')
-    material_shader_f = open(material_shader_dst_path, 'w')
-
-    shaderc.process_material_shader(shader_f, material_f, material_shader_f)
-
-    shader_f.close()
-    material_f.close()
-    material_shader_f.close()
+    out = shaderc.proc_material_shader(shader_src_path, material_src_path)
+    with open(material_shader_dst_path, 'w') as out_f:
+        out_f.write(out)
 
 
 def generate(resources):

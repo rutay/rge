@@ -78,36 +78,14 @@ struct Accessor
 	}
 };
 
-enum LightType
-{
-	POINT,
-	DIRECTIONAL,
-	SPOT,
-
-	Count
-};
-
 struct Light
 {
-	LightType m_type;
 	Vec3 m_color;
-	float m_intensity;
-};
 
-struct PointLight : public Light
-{
-	float m_radius;
-};
-
-struct DirectionalLight : public Light
-{
+	Vec3 m_position;
+	Vec3 m_angle;
 	Vec3 m_direction;
-};
-
-struct SpotLight : public Light
-{
-	Vec3 m_direction;
-	float m_angle;
+	float m_distance;
 };
 
 struct AttribType

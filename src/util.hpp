@@ -22,6 +22,11 @@ template<typename T>
 struct Vec<3, T>
 {
     float x, y, z;
+
+    Vec() = default;
+    Vec(Vec const& other) = default;
+
+    Vec(T x, T y, T z) : x(x), y(y), z(z) {}
 };
 
 using Vec3 = Vec<3, float>;

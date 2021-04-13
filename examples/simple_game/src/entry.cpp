@@ -39,6 +39,16 @@ void MyGame::on_init()
     Node* gumball_darwin = loader.load_from_resource(resources::Model::GumballDarwin);
 	m_scene->m_children.push_back(gumball_darwin);
 
+	Node* light_node = new Node();
+	light_node->m_light = new Light{
+		.m_color = Vec3(0.0f, 1.0f, 0.0f),
+		.m_position = Vec3(0.0f, 0.0f, 0.0f),
+		.m_angle = Vec3(0.0f, 0.0f, 0.0f),
+		.m_direction = Vec3(0.0f, 1.0f, 0.0f),
+		.m_distance = 100.0f
+	};
+	m_scene->m_children.push_back(light_node);
+
 	//Node* mc_laren = loader.load_from_resource("assets/models/McLaren.glb");
 	//m_scene->m_children.push_back(mc_laren);
 
@@ -52,7 +62,7 @@ void MyGame::on_init()
 
 	m_renderer = Renderer::create();
 
-	//SDL_SetRelativeMouseMode(SDL_TRUE); todo
+	SDL_SetRelativeMouseMode(SDL_TRUE);
 
 	m_free_camera.m_aspect_ratio = float(m_width) / m_height;
 }
@@ -68,8 +78,18 @@ void MyGame::on_event(SDL_Event& event)
         }
     }
 
-    m_camera_movement_ctrl.on_sdl_event(event);
-    m_camera_orientation_ctrl.on_sdl_event(m_free_camera, event);
+    if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
+	{
+    	if (!SDL_GetRelativeMouseMode()) {
+    		SDL_SetRelativeMouseMode(SDL_TRUE);
+    	}
+	}
+
+    if (SDL_GetRelativeMouseMode())
+    {
+		m_camera_movement_ctrl.on_sdl_event(event);
+		m_camera_orientation_ctrl.on_sdl_event(m_free_camera, event);
+    }
 }
 
 void MyGame::on_update(double dt)

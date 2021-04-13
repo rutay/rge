@@ -1,10 +1,15 @@
 
-layout (std140) uniform rge_Material
+struct BasicMaterial
 {
     vec3 color;
 };
 
+layout (std140) uniform rge_b_material
+{
+    BasicMaterial material;
+};
+
 vec3 apply_light(vec3 view_pos, vec3 frag_pos, vec3 frag_norm, Light light)
 {
-    return rge_material.color;
+    return light.color;
 }

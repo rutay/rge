@@ -1,5 +1,5 @@
 
-layout (std140) uniform rge_Material
+layout (std140) uniform rge_b_material
 {
     vec3 ambient;
     vec3 diffuse;
@@ -10,7 +10,7 @@ layout (std140) uniform rge_Material
 vec3 apply_light(vec3 view_pos, vec3 frag_pos, vec3 frag_norm, Light light)
 {
     // ambient
-    vec3 ambient = light.color * rge_material.ambient;
+    vec3 ambient = light.color * rge_b_material.ambient;
 
     // diffuse
     vec3 norm = normalize(frag_norm);

@@ -12,11 +12,7 @@ using namespace rge;
 
 Vec3 parse_vec3(std::vector<double> const& vec3)
 {
-	return {
-		.x = (float) vec3[0],
-		.y = (float) vec3[1],
-		.z = (float) vec3[2]
-	};
+	return Vec3((float) vec3[0], (float) vec3[1], (float) vec3[2]);
 }
 
 Vec4 parse_vec4(std::vector<double> const& vec4)
@@ -113,10 +109,14 @@ Material* SceneLoader_tinygltf::load_material(tinygltf::Model const& gltf_model,
 
 	tinygltf::Material const& gltf_material = gltf_model.materials[material_idx];
 
-	materials::StandardMaterial* material = new materials::StandardMaterial();
-	material->m_metallic   = (float) gltf_material.pbrMetallicRoughness.metallicFactor;
-	material->m_roughness  = (float) gltf_material.pbrMetallicRoughness.roughnessFactor;
-	material->m_base_color = parse_vec3(gltf_material.pbrMetallicRoughness.baseColorFactor);
+	materials::BasicMaterial* material = new materials::BasicMaterial();
+	material->m_color = Vec4(
+		parse_vec3(gltf_material.pbrMetallicRoughness.baseColorFactor),
+		1.0f
+	);
+	//material->m_metallic   = (float) gltf_material.pbrMetallicRoughness.metallicFactor;
+	//material->m_roughness  = (float) gltf_material.pbrMetallicRoughness.roughnessFactor;
+	//material->m_base_color = parse_vec3(gltf_material.pbrMetallicRoughness.baseColorFactor);
 
 	m_material_by_idx.emplace(material_idx, material);
 

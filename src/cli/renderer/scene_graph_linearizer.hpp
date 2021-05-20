@@ -12,6 +12,7 @@ namespace rge
 	class LinearizedSceneGraph
 	{
 	private:
+		/* SceneGraph */
 		void handle_geometry_update(Packet const* packet);
 		void handle_light_update(Packet const* packet);
 		void handle_node_set_geometry(Packet const* packet);
@@ -54,23 +55,17 @@ namespace rge
 
 	// ------------------------------------------------------------------------------------------------ Packets
 
-	struct Packet_LinearizedSceneGraph_GeometryNodesUpdate : public Packet
+	struct Packet_LinearizedSceneGraph_GeometryNodesUpdate :
+		public define_packet<protocol::PacketType::LINEARIZED_SCENE_GRAPH_GEOMETRY_NODES_UPDATE>
 	{
-		Packet_LinearizedSceneGraph_GeometryNodesUpdate() :
-			Packet(protocol::PacketType::LINEARIZED_SCENE_GRAPH_GEOMETRY_NODES_UPDATE)
-		{}
-
 		Geometry const* m_geometry;
 		Node const* m_added_node;
 		Node const* m_removed_node;
 	};
 
-	struct Packet_LinearizedSceneGraph_LightNodesUpdate : public Packet
+	struct Packet_LinearizedSceneGraph_LightNodesUpdate :
+		public define_packet<protocol::PacketType::LINEARIZED_SCENE_GRAPH_LIGHT_NODES_UPDATE>
 	{
-		Packet_LinearizedSceneGraph_LightNodesUpdate() :
-			Packet(protocol::PacketType::LINEARIZED_SCENE_GRAPH_LIGHT_NODES_UPDATE)
-		{}
-
 		Node const* m_added_light_node;
 		Node const* m_removed_light_node;
 	};

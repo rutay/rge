@@ -297,8 +297,7 @@ void BakedSceneGraph::update_instance(DrawCall& draw_call, Node const* node)
 }
 
 void BakedSceneGraph::init()
-{ // Here we expect the LinearizedSceneGraph to be already initialized.
-
+{
 	m_recording = false;
 
 	for (auto [geometry, _] : m_linearized_scene_graph->m_instances_by_geometry) {

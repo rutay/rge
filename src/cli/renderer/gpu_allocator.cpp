@@ -8,14 +8,16 @@
 
 using namespace rge;
 
+// https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/quick_start.html
+
+// ------------------------------------------------------------------------------------------------ GpuBuffer
+
 bool GpuBuffer::is_allocated()
 {
 	return m_buffer || m_allocation;
 }
 
-// ------------------------------------------------------------------------------------------------
-// GpuAllocator
-// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------ GpuAllocator
 
 void GpuAllocator::destroy_buffer_if_any(GpuBuffer& handle)
 {
@@ -159,25 +161,4 @@ void GpuAllocator::update_buffer(
 	} else {
 		update_device_only_buffer(handle, data, size, dst_offset);
 	}
-}
-
-
-// https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/quick_start.html
-
-GpuAllocator::GpuAllocator(VkInstance instance, VkPhysicalDevice physical_device, VkDevice device) :
-	m_instance(instance),
-	m_physical_device(physical_device),
-	m_device(device)
-{
-}
-
-// ------------------------------------------------------------------------------------------------
-
-void GpuAllocator::alloc(Node const* scene_graph, SceneGraphLinearizer::Result const& linearized_scene_graph, Result& result)
-{
-	Pass pass;
-	pass.m_gpu_allocator = this;
-	pass.m_linearized_scene_graph = &linearized_scene_graph;
-	pass.m_result = &result;
-	pass.handle_all();
 }

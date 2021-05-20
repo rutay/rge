@@ -29,6 +29,44 @@ namespace rge
 		};
 	};
 
+	using VertexBuffer = GpuBuffer;
+
+	struct IndicesBuffer
+	{
+		GpuBuffer m_buffer;
+		size_t m_indices_count;
+		VkIndexType m_index_type = VK_INDEX_TYPE_UINT32;
+	};
+
+	struct InstanceBuffer
+	{
+		GpuBuffer m_buffer;
+		std::unordered_map<Node const*, size_t> m_offset_by_instance;
+		size_t m_instances_count;
+
+		bool is_allocated();
+	};
+
+	struct DrawCall
+	{
+		std::vector<VertexBuffer> m_vertex_buffers;
+
+		IndicesBuffer m_indices_buffer;
+
+		std::array<InstanceBuffer, AllocationType::Count> m_instances_buffers;
+
+		// TODO constexpr
+
+		static std::vector<VkVertexInputBindingDescription> get_vertex_buffers_binding_descriptions();
+		static std::vector<VkVertexInputAttributeDescription> get_vertex_buffers_attributes_descriptions();
+
+		static VkVertexInputBindingDescription get_instance_buffer_binding_description();
+		static std::vector<VkVertexInputAttributeDescription> get_instance_buffer_attributes_descriptions();
+
+		static std::vector<VkVertexInputBindingDescription> get_binding_descriptions();
+		static std::vector<VkVertexInputAttributeDescription> get_attributes_descriptions();
+	};
+
 	class BakedSceneGraph
 	{
 	private:
@@ -53,41 +91,6 @@ namespace rge
 		GpuAllocator m_gpu_allocator;
 
 		/* Result */
-
-		struct VertexBuffer
-		{
-			GpuBuffer m_buffer;
-
-			uint32_t m_binding;
-			VkVertexInputBindingDescription m_binding_description;
-			std::vector<VkVertexInputAttributeDescription> m_attribute_descriptions;
-		};
-
-		struct IndicesBuffer
-		{
-			GpuBuffer m_buffer;
-			size_t m_indices_count;
-		};
-
-		struct InstanceBuffer
-		{
-			GpuBuffer m_buffer;
-			std::unordered_map<Node const*, size_t> m_offset_by_instance;
-			size_t m_instances_count;
-
-			uint32_t m_binding;
-			VkVertexInputBindingDescription m_binding_description;
-			std::vector<VkVertexInputAttributeDescription> m_attribute_descriptions;
-		};
-
-		struct DrawCall
-		{
-			std::vector<VertexBuffer> m_vertex_buffers;
-			IndicesBuffer m_indices_buffer;
-
-			std::array<InstanceBuffer, AllocationType::Count> m_instances_buffers;
-		};
-
 		std::unordered_map<Geometry const*, DrawCall> m_draw_calls;
 
 		/**/

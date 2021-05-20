@@ -1,6 +1,8 @@
 
 #include "scene_graph_baker.hpp"
 
+#include "vk_utils.hpp"
+
 using namespace rge;
 using namespace rge::scene_graph_baker;
 
@@ -11,6 +13,125 @@ using namespace std::placeholders;
 void scene_graph_baker::init()
 {
 	packet_handler_class_registry::register_packet_handler_class(g_packet_handler_class, "scene_graph_baker_packet_handler");
+}
+
+// ------------------------------------------------------------------------------------------------ InstanceBuffer
+
+bool InstanceBuffer::is_allocated()
+{
+	return m_buffer.is_allocated();
+}
+
+// ------------------------------------------------------------------------------------------------ DrawCall
+
+/* Vertex buffers */
+// One binding (or buffer) for every attribute (`separated`) or all attributes in one buffer (`interleaved`).
+// TODO be able to choose between these two setups.
+
+std::vector<VkVertexInputBindingDescription> DrawCall::get_vertex_buffers_binding_descriptions()
+{
+	std::vector<VkVertexInputBindingDescription> binding_descriptions;
+	binding_descriptions.resize(AttribType::PerVertexAttribCount, {});
+
+	for (size_t attrib_type = 0; attrib_type < AttribType::PerVertexAttribCount; attrib_type++)
+	{
+		Format::Enum attrib_format = AttribType::get_format(static_cast<AttribType::Enum>(attrib_type));
+
+		VkVertexInputBindingDescription binding_description{};
+		binding_description.binding = attrib_type;
+		binding_description.stride = Format::get_size(attrib_format);
+		binding_description.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+		binding_descriptions[attrib_type] = binding_description;
+	}
+
+	return binding_descriptions;
+}
+
+std::vector<VkVertexInputAttributeDescription> DrawCall::get_vertex_buffers_attributes_descriptions()
+{
+	std::vector<VkVertexInputAttributeDescription> attributes_descriptions;
+	attributes_descriptions.resize(AttribType::PerVertexAttribCount, {});
+
+	for (size_t attrib_type = 0; attrib_type < AttribType::PerVertexAttribCount; attrib_type++)
+	{
+		Format::Enum attrib_format = AttribType::get_format(static_cast<AttribType::Enum>(attrib_type));
+
+		VkVertexInputAttributeDescription attribute_description{};
+		attribute_description.binding = attrib_type;
+		attribute_description.location = attrib_type;
+		attribute_description.format = to_vk_format(attrib_format);
+		attribute_description.offset = 0;
+		attributes_descriptions[attrib_type] = attribute_description;
+	}
+}
+
+/* Instance buffer */
+// Only one binding (or buffer) and its fields are interleaved.
+
+VkVertexInputBindingDescription DrawCall::get_instance_buffer_binding_description()
+{
+	VkVertexInputBindingDescription binding_description{};
+	binding_description.binding = AttribType::TRANSFORM_0;
+	binding_description.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+
+	size_t stride = 0;
+	for (size_t attrib_type = 0; attrib_type < AttribType::PerInstanceAttribCount; attrib_type++)
+	{
+		Format::Enum attrib_format = AttribType::get_format(static_cast<AttribType::Enum>(attrib_type));
+		stride += Format::get_size(attrib_format);
+	}
+	binding_description.stride = stride;
+
+	return binding_description;
+}
+
+std::vector<VkVertexInputAttributeDescription> DrawCall::get_instance_buffer_attributes_descriptions()
+{
+	std::vector<VkVertexInputAttributeDescription> attributes_descriptions;
+	attributes_descriptions.resize(AttribType::PerInstanceAttribCount, {});
+
+	size_t offset = 0;
+
+	VkVertexInputAttributeDescription attribute_description;
+	attribute_description.binding = AttribType::TRANSFORM_0;
+
+	for (size_t attrib_type = 0; attrib_type < AttribType::PerInstanceAttribCount; attrib_type++)
+	{
+		attribute_description.location = AttribType::TRANSFORM_0 + attrib_type;
+		attribute_description.format = to_vk_format(AttribType::get_format(AttribType::TRANSFORM_0));
+		attribute_description.offset = offset;
+		attributes_descriptions[attrib_type] = attribute_description;
+	}
+
+	return attributes_descriptions;
+}
+
+/**/
+
+std::vector<VkVertexInputBindingDescription> DrawCall::get_binding_descriptions()
+{
+	std::vector<VkVertexInputBindingDescription> binding_descriptions;
+
+	auto vertex_buffers_binding_descriptions = get_vertex_buffers_binding_descriptions();
+	auto instance_buffer_binding_description = get_instance_buffer_binding_description();
+
+	binding_descriptions.insert(binding_descriptions.begin(), vertex_buffers_binding_descriptions.begin(), vertex_buffers_binding_descriptions.end());
+	binding_descriptions.push_back(instance_buffer_binding_description);
+
+	return binding_descriptions;
+}
+
+std::vector<VkVertexInputAttributeDescription> DrawCall::get_attributes_descriptions()
+{
+	std::vector<VkVertexInputAttributeDescription> attributes_descriptions;
+
+	auto vertex_buffers_attributes_descriptions = get_vertex_buffers_attributes_descriptions();
+	auto instance_buffer_attributes_descriptions = get_instance_buffer_attributes_descriptions();
+
+	attributes_descriptions.insert(attributes_descriptions.begin(), vertex_buffers_attributes_descriptions.begin(), vertex_buffers_attributes_descriptions.end());
+	attributes_descriptions.insert(attributes_descriptions.begin(), instance_buffer_attributes_descriptions.begin(), instance_buffer_attributes_descriptions.end());
+
+	return attributes_descriptions;
 }
 
 // ------------------------------------------------------------------------------------------------ BakedSceneGraph
@@ -64,19 +185,6 @@ BakedSceneGraph::BakedSceneGraph(LinearizedSceneGraph* linearized_scene_graph) :
 	init();
 }
 
-VkFormat to_vk_format(Format::Enum format)
-{
-	switch (format)
-	{
-	case Format::Enum::FLOAT: return VK_FORMAT_R32_SFLOAT;
-	case Format::Enum::VEC2:  return VK_FORMAT_R32G32_SFLOAT;
-	case Format::Enum::VEC3:  return VK_FORMAT_R32G32B32_SFLOAT;
-	case Format::Enum::VEC4:  return VK_FORMAT_R32G32B32A32_SFLOAT;
-	default:
-		throw std::runtime_error("Unrecognized format");
-	}
-}
-
 void BakedSceneGraph::destroy_draw_call_of_geometry(Geometry const* geometry)
 {
 	if (m_draw_calls.contains(geometry))
@@ -104,7 +212,7 @@ void BakedSceneGraph::recreate_draw_call_for_geometry(Geometry const* geometry)
 void BakedSceneGraph::destroy_vertex_buffers(DrawCall& draw_call)
 {
 	for (VertexBuffer vertex_buffer : draw_call.m_vertex_buffers) {
-		m_gpu_allocator.destroy_buffer_if_any(vertex_buffer.m_buffer);
+		m_gpu_allocator.destroy_buffer_if_any(vertex_buffer);
 	}
 
 	draw_call.m_vertex_buffers.clear();
@@ -114,34 +222,15 @@ void BakedSceneGraph::realloc_vertex_buffers(DrawCall& draw_call, Geometry const
 {
 	destroy_vertex_buffers(draw_call);
 
-	draw_call.m_vertex_buffers.resize(AttribType::PerVertexAttribCount, {});
-
 	for (size_t attrib_idx = 0; attrib_idx < AttribType::PerVertexAttribCount; attrib_idx++)
 	{
 		AttribType::Enum attrib_type = static_cast<AttribType::Enum>(attrib_idx);
-		Format::Enum attrib_format = AttribType::get_format(attrib_type);
 
 		auto accessor = geometry->m_attributes[attrib_type];
 		VertexBuffer& vertex_buffer = draw_call.m_vertex_buffers[attrib_type];
 
-		m_gpu_allocator.alloc_device_only_buffer(vertex_buffer.m_buffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, accessor->get_size());
-		m_gpu_allocator.update_device_only_buffer(vertex_buffer.m_buffer, accessor->get_data(), accessor->get_size(), 0);
-
-		/* Binding description */
-		vertex_buffer.m_binding = attrib_type;
-
-		VkVertexInputBindingDescription& binding_desc = vertex_buffer.m_binding_description;
-		binding_desc.binding = vertex_buffer.m_binding;
-		binding_desc.stride = Format::get_size(attrib_format);
-		binding_desc.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
-
-		/* Attribute description */
-		vertex_buffer.m_attribute_descriptions.resize(1, {});
-
-		vertex_buffer.m_attribute_descriptions[0].binding = vertex_buffer.m_binding;
-		vertex_buffer.m_attribute_descriptions[0].location = attrib_type;
-		vertex_buffer.m_attribute_descriptions[0].format = to_vk_format(attrib_format);
-		vertex_buffer.m_attribute_descriptions[0].offset = 0;
+		m_gpu_allocator.alloc_device_only_buffer(vertex_buffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, accessor->get_size());
+		m_gpu_allocator.update_device_only_buffer(vertex_buffer, accessor->get_data(), accessor->get_size(), 0);
 	}
 
 	if (m_recording)
@@ -244,26 +333,6 @@ void BakedSceneGraph::realloc_instances_buffers(DrawCall& draw_call, std::unorde
 			m_gpu_allocator.alloc_device_only_buffer(instance_buffer.m_buffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, data_size);
 			m_gpu_allocator.update_device_only_buffer(instance_buffer.m_buffer, staging_buffer, data_size, 0);
 			break;
-		}
-
-		/* Binding description */
-		// The buffer binding starts from the worst case (every attribute needs its own buffer) plus the index of the buffer (or the `allocation_type`).
-		instance_buffer.m_binding = AttribType::PerVertexAttribCount + allocation_type + 1;
-
-		VkVertexInputBindingDescription& binding_desc = instance_buffer.m_binding_description;
-		binding_desc.binding = instance_buffer.m_binding;
-		binding_desc.stride = instance_data_size;
-		binding_desc.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
-
-		/* Attribute description */
-		instance_buffer.m_attribute_descriptions.resize(4, {});
-
-		for (int i = 0; i < 4; i++) // Transform
-		{
-			instance_buffer.m_attribute_descriptions[i].binding = instance_buffer.m_binding;
-			instance_buffer.m_attribute_descriptions[i].location = AttribType::TRANSFORM_0 + i;
-			instance_buffer.m_attribute_descriptions[i].format = to_vk_format(AttribType::get_format(AttribType::TRANSFORM_0));
-			instance_buffer.m_attribute_descriptions[i].offset = i * 16 * sizeof(float);
 		}
 	}
 

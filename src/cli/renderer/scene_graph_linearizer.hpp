@@ -1,16 +1,23 @@
 #pragma once
 
 #include "scene/scene.hpp"
+#include "pipeline.hpp"
 
 #include <unordered_set>
 #include <unordered_map>
 
 namespace rge
 {
-	// ------------------------------------------------------------------------------------------------ LinearizedSceneGraph
+	// ------------------------------------------------------------------------------------------------ scene_graph_linearizer
 
-	class LinearizedSceneGraph
+	class scene_graph_linearizer :
+		public rge::pass<Node*, rge::scene_graph_linearizer*>
 	{
+	public:
+		static PacketHandlerClass s_packet_handler_class;
+
+		static void init();
+
 	private:
 		/* SceneGraph */
 		void handle_geometry_update(Packet const* packet);
@@ -21,11 +28,9 @@ namespace rge
 		void handle_node_transform_update(Packet const* packet);
 		void handle_node_parent_update(Packet const* packet);
 
-		void init();
+		void init0();
 
 	public:
-		Node* const m_scene_graph;
-
 		PacketPool m_packet_pool;
 		MultiplexerPacketHandler const m_packet_handler;
 
@@ -34,7 +39,8 @@ namespace rge
 		std::unordered_map<Geometry const*, std::unordered_set<Node const*>> m_instances_by_geometry;
 		std::unordered_set<Node const*> m_light_nodes;
 
-		LinearizedSceneGraph(Node* scene_graph);
+
+		scene_graph_linearizer(Node* scene_graph);
 
 		void add_node_for_geometry(Geometry* geometry, Node const* node, bool log = true);
 		void remove_node_from_geometry(Geometry* geometry, Node const* node, bool log = true);
@@ -43,15 +49,6 @@ namespace rge
 
 		void apply_changes();
 	};
-
-	// ------------------------------------------------------------------------------------------------ scene_graph_linearizer
-
-	namespace scene_graph_linearizer
-	{
-		PacketHandlerClass g_packet_handler_class;
-
-		void init();
-	}
 
 	// ------------------------------------------------------------------------------------------------ Packets
 

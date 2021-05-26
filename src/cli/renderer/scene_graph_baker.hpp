@@ -2,21 +2,13 @@
 
 #include "scene_graph_linearizer.hpp"
 #include "gpu_allocator.hpp"
+#include "pipeline.hpp"
 
 #include <entt/entt.hpp>
 
 namespace rge
 {
 	// ------------------------------------------------------------------------------------------------ scene_graph_baker
-
-	namespace scene_graph_baker
-	{
-		PacketHandlerClass g_packet_handler_class;
-
-		void init();
-	}
-
-	// ------------------------------------------------------------------------------------------------ BakedSceneGraph
 
 	struct AllocationType
 	{
@@ -67,24 +59,27 @@ namespace rge
 		static std::vector<VkVertexInputAttributeDescription> get_attributes_descriptions();
 	};
 
-	class BakedSceneGraph
+	class scene_graph_baker :
+		public rge::pass<scene_graph_linearizer*, scene_graph_baker*>
 	{
+	public:
+		static PacketHandlerClass g_packet_handler_class;
+		static void init();
+
 	private:
 		MultiplexerPacketHandler const m_packet_handler;
 
-		/* SceneGraph */
+		/* scene_graph */
 		void handle_node_transform_update(Packet const* packet);
 		void handle_node_parent_update(Packet const* packet);
 
-		/* LinearizedSceneGraph */
+		/* linearized_scene_graph */
 		void handle_geometry_nodes_update(Packet const* packet);
 		void handle_light_nodes_update(Packet const* packet);
 
-		void init();
+		void init0();
 
 	public:
-		LinearizedSceneGraph* const m_linearized_scene_graph;
-
 		bool m_recording = true;
 		PacketPool m_packet_pool;
 
@@ -95,7 +90,7 @@ namespace rge
 
 		/**/
 
-		BakedSceneGraph(LinearizedSceneGraph* linearized_scene_graph);
+		scene_graph_baker(scene_graph_linearizer* input);
 
 		void destroy_draw_call_of_geometry(Geometry const* geometry);
 		void recreate_draw_call_for_geometry(Geometry const* geometry);

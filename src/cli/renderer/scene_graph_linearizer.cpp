@@ -2,7 +2,6 @@
 #include "scene_graph_linearizer.hpp"
 
 using namespace rge;
-using namespace rge::scene_graph_linearizer;
 
 using namespace std::placeholders;
 
@@ -10,18 +9,18 @@ using namespace std::placeholders;
 
 void scene_graph_linearizer::init()
 {
-	packet_handler_class_registry::register_packet_handler_class(g_packet_handler_class, "scene_graph_linearizer_packet_handler");
+	packet_handler_class_registry::register_packet_handler_class(s_packet_handler_class, "scene_graph_linearizer_packet_handler");
 }
 
 // ------------------------------------------------------------------------------------------------ LinearizedSceneGraph
 
-void LinearizedSceneGraph::handle_geometry_update(Packet const* packet)
+void scene_graph_linearizer::handle_geometry_update(Packet const* packet)
 {}
 
-void LinearizedSceneGraph::handle_light_update(Packet const* packet)
+void scene_graph_linearizer::handle_light_update(Packet const* packet)
 {}
 
-void LinearizedSceneGraph::handle_node_set_geometry(Packet const* packet)
+void scene_graph_linearizer::handle_node_set_geometry(Packet const* packet)
 {
 	auto morphed_packet = morph_packet_const<Packet_SceneGraph_NodeSetGeometry>(packet);
 
@@ -36,22 +35,22 @@ void LinearizedSceneGraph::handle_node_set_geometry(Packet const* packet)
 	}
 }
 
-void LinearizedSceneGraph::handle_node_set_material(Packet const* packet)
+void scene_graph_linearizer::handle_node_set_material(Packet const* packet)
 {
 	// todo
 }
 
-void LinearizedSceneGraph::handle_node_set_light(Packet const* packet)
+void scene_graph_linearizer::handle_node_set_light(Packet const* packet)
 {
 	auto morphed_packet = morph_packet_const<Packet_SceneGraph_NodeSetLight>(packet);
 
 	morphed_packet->m_light ? add_light_node(morphed_packet->m_node) : remove_light_node(morphed_packet->m_node);
 }
 
-void LinearizedSceneGraph::handle_node_transform_update(Packet const* packet)
+void scene_graph_linearizer::handle_node_transform_update(Packet const* packet)
 {}
 
-void LinearizedSceneGraph::handle_node_parent_update(Packet const* packet)
+void scene_graph_linearizer::handle_node_parent_update(Packet const* packet)
 {
 	auto morphed_packet = morph_packet_const<Packet_SceneGraph_NodeParentUpdate>(packet);
 
@@ -61,22 +60,21 @@ void LinearizedSceneGraph::handle_node_parent_update(Packet const* packet)
 	}
 }
 
-LinearizedSceneGraph::LinearizedSceneGraph(Node* scene_graph) :
-	m_scene_graph(scene_graph),
+scene_graph_linearizer::scene_graph_linearizer(Node* scene_graph) : rge::pass<Node*, rge::scene_graph_linearizer*>(scene_graph),
 	m_packet_handler({
-		 { protocol::PacketType::SCENE_GRAPH_GEOMETRY_UPDATE,       std::bind(&LinearizedSceneGraph::handle_geometry_update, this, _1) },
-		 { protocol::PacketType::SCENE_GRAPH_LIGHT_UPDATE,          std::bind(&LinearizedSceneGraph::handle_light_update, this, _1) },
-		 { protocol::PacketType::SCENE_GRAPH_NODE_SET_GEOMETRY,     std::bind(&LinearizedSceneGraph::handle_node_set_geometry, this, _1) },
-		 { protocol::PacketType::SCENE_GRAPH_NODE_SET_MATERIAL,     std::bind(&LinearizedSceneGraph::handle_node_set_material, this, _1) },
-		 { protocol::PacketType::SCENE_GRAPH_NODE_SET_LIGHT,        std::bind(&LinearizedSceneGraph::handle_node_set_light, this, _1) },
-		 { protocol::PacketType::SCENE_GRAPH_NODE_TRANSFORM_UPDATE, std::bind(&LinearizedSceneGraph::handle_node_transform_update, this, _1) },
-		 { protocol::PacketType::SCENE_GRAPH_NODE_PARENT_UPDATE,    std::bind(&LinearizedSceneGraph::handle_node_parent_update, this, _1) }
+		 { protocol::PacketType::SCENE_GRAPH_GEOMETRY_UPDATE,       std::bind(&scene_graph_linearizer::handle_geometry_update, this, _1) },
+		 { protocol::PacketType::SCENE_GRAPH_LIGHT_UPDATE,          std::bind(&scene_graph_linearizer::handle_light_update, this, _1) },
+		 { protocol::PacketType::SCENE_GRAPH_NODE_SET_GEOMETRY,     std::bind(&scene_graph_linearizer::handle_node_set_geometry, this, _1) },
+		 { protocol::PacketType::SCENE_GRAPH_NODE_SET_MATERIAL,     std::bind(&scene_graph_linearizer::handle_node_set_material, this, _1) },
+		 { protocol::PacketType::SCENE_GRAPH_NODE_SET_LIGHT,        std::bind(&scene_graph_linearizer::handle_node_set_light, this, _1) },
+		 { protocol::PacketType::SCENE_GRAPH_NODE_TRANSFORM_UPDATE, std::bind(&scene_graph_linearizer::handle_node_transform_update, this, _1) },
+		 { protocol::PacketType::SCENE_GRAPH_NODE_PARENT_UPDATE,    std::bind(&scene_graph_linearizer::handle_node_parent_update, this, _1) }
 	})
 {
-	init();
+	this->init0();
 }
 
-void LinearizedSceneGraph::add_node_for_geometry(Geometry* geometry, Node const* node, bool log)
+void scene_graph_linearizer::add_node_for_geometry(Geometry* geometry, Node const* node, bool log)
 {
 	if (!m_instances_by_geometry.contains(geometry)) {
 		m_instances_by_geometry.emplace(geometry, std::unordered_set<Node const*>());
@@ -93,7 +91,7 @@ void LinearizedSceneGraph::add_node_for_geometry(Geometry* geometry, Node const*
 	}
 }
 
-void LinearizedSceneGraph::remove_node_from_geometry(Geometry* geometry, Node const* node, bool log)
+void scene_graph_linearizer::remove_node_from_geometry(Geometry* geometry, Node const* node, bool log)
 {
 	if (m_instances_by_geometry.contains(geometry))
 	{
@@ -108,7 +106,7 @@ void LinearizedSceneGraph::remove_node_from_geometry(Geometry* geometry, Node co
 	}
 }
 
-void LinearizedSceneGraph::add_light_node(Node const* light_node, bool log)
+void scene_graph_linearizer::add_light_node(Node const* light_node, bool log)
 {
 	m_light_nodes.insert(light_node);
 
@@ -121,7 +119,7 @@ void LinearizedSceneGraph::add_light_node(Node const* light_node, bool log)
 	}
 }
 
-void LinearizedSceneGraph::remove_light_node(Node const* light_node, bool log)
+void scene_graph_linearizer::remove_light_node(Node const* light_node, bool log)
 {
 	m_light_nodes.erase(light_node);
 
@@ -134,11 +132,11 @@ void LinearizedSceneGraph::remove_light_node(Node const* light_node, bool log)
 	}
 }
 
-void LinearizedSceneGraph::init()
+void scene_graph_linearizer::init0()
 {
-	printf("Initializing linearized SceneGraph: `%s`...\n", m_scene_graph->m_name.c_str());
+	printf("Initializing linearized SceneGraph: `%s`...\n", m_input->m_name.c_str());
 
-	m_scene_graph->traverse_const([this](Node const* node) {
+	m_input->traverse_const([this](Node const* node) {
 		if (node->m_light) {
 			add_light_node(node, false);
 		}
@@ -149,7 +147,7 @@ void LinearizedSceneGraph::init()
 	});
 }
 
-void LinearizedSceneGraph::apply_changes()
+void scene_graph_linearizer::apply_changes()
 {
-	m_scene_graph->handle_packets_deeply(g_packet_handler_class, m_packet_handler);
+	m_input->handle_packets_deeply(s_packet_handler_class, m_packet_handler);
 }

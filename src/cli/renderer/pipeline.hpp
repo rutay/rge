@@ -16,7 +16,9 @@ namespace rge
 
 	class base_pass {};
 
-	template<typename _input, typename _output, typename... _components>
+	template<typename _input, typename _output, typename... _components> requires
+		std::is_pointer_v<_input> &&
+		std::is_pointer_v<_output>
 	class pass : public base_pass
 	{
 	public:
@@ -28,10 +30,10 @@ namespace rge
 		components_t m_components;
 
 	public:
-		input_t* m_input;
-		output_t* m_output;
+		input_t m_input;
+		output_t m_output;
 
-		pass(input_t* input) :
+		pass(input_t input) :
 			m_input(input)
 		{}
 

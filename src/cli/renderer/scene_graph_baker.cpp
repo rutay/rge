@@ -4,7 +4,6 @@
 #include "vk_utils.hpp"
 
 using namespace rge;
-using namespace rge::scene_graph_baker;
 
 using namespace std::placeholders;
 
@@ -136,19 +135,19 @@ std::vector<VkVertexInputAttributeDescription> DrawCall::get_attributes_descript
 
 // ------------------------------------------------------------------------------------------------ BakedSceneGraph
 
-void BakedSceneGraph::handle_node_transform_update(Packet const* packet)
+void scene_graph_baker::handle_node_transform_update(Packet const* packet)
 {
 	auto morphed = static_cast<Packet_SceneGraph_NodeTransformUpdate const*>(packet);
 	update_instance(m_draw_calls.at(morphed->m_node->m_geometry), morphed->m_node);
 }
 
-void BakedSceneGraph::handle_node_parent_update(Packet const* packet)
+void scene_graph_baker::handle_node_parent_update(Packet const* packet)
 {
 	auto morphed = static_cast<Packet_SceneGraph_NodeParentUpdate const*>(packet);
 	update_instance(m_draw_calls.at(morphed->m_node->m_geometry), morphed->m_node);
 }
 
-void BakedSceneGraph::handle_geometry_nodes_update(Packet const* packet)
+void scene_graph_baker::handle_geometry_nodes_update(Packet const* packet)
 {
 	auto morphed = static_cast<Packet_LinearizedSceneGraph_GeometryNodesUpdate const*>(packet);
 
@@ -156,36 +155,35 @@ void BakedSceneGraph::handle_geometry_nodes_update(Packet const* packet)
 	{ // A node has been added and its geometry wasn't uploaded yet.
 		recreate_draw_call_for_geometry(morphed->m_geometry);
 	}
-	else if (morphed->m_removed_node && m_linearized_scene_graph->m_instances_by_geometry.at(morphed->m_geometry).empty())
+	else if (morphed->m_removed_node && m_input->m_instances_by_geometry.at(morphed->m_geometry).empty())
 	{ // All of the instances have been removed from a certain geometry. So also the geometry should be removed.
 		destroy_draw_call_of_geometry(morphed->m_geometry);
 	}
 	else if (morphed->m_added_node || morphed->m_removed_node)
 	{ // A node has been added or removed from a certain geometry, the whole instances buffers need to be rebuilt.
 		auto draw_call = m_draw_calls.at(morphed->m_geometry);
-		realloc_instances_buffers(draw_call, m_linearized_scene_graph->m_instances_by_geometry.at(morphed->m_geometry));
+		realloc_instances_buffers(draw_call, m_input->m_instances_by_geometry.at(morphed->m_geometry));
 	}
 }
 
-void BakedSceneGraph::handle_light_nodes_update(Packet const* packet)
+void scene_graph_baker::handle_light_nodes_update(Packet const* packet)
 {
 	// todo
 }
 
-BakedSceneGraph::BakedSceneGraph(LinearizedSceneGraph* linearized_scene_graph) :
-	m_linearized_scene_graph(linearized_scene_graph),
+scene_graph_baker::scene_graph_baker(scene_graph_linearizer* input) :
+	rge::pass<scene_graph_linearizer*, scene_graph_baker*>(input),
 	m_packet_handler({
-		 { protocol::PacketType::SCENE_GRAPH_NODE_PARENT_UPDATE,    std::bind(&BakedSceneGraph::handle_node_parent_update, this, _1) },
-		 { protocol::PacketType::SCENE_GRAPH_NODE_TRANSFORM_UPDATE, std::bind(&BakedSceneGraph::handle_node_transform_update, this, _1) },
-
-		 { protocol::PacketType::LINEARIZED_SCENE_GRAPH_GEOMETRY_NODES_UPDATE, std::bind(&BakedSceneGraph::handle_geometry_nodes_update, this, _1) },
-	     { protocol::PacketType::LINEARIZED_SCENE_GRAPH_LIGHT_NODES_UPDATE,    std::bind(&BakedSceneGraph::handle_light_nodes_update, this, _1) }
+		 { protocol::PacketType::SCENE_GRAPH_NODE_PARENT_UPDATE,    std::bind(&scene_graph_baker::handle_node_parent_update, this, _1) },
+		 { protocol::PacketType::SCENE_GRAPH_NODE_TRANSFORM_UPDATE, std::bind(&scene_graph_baker::handle_node_transform_update, this, _1) },
+		 { protocol::PacketType::LINEARIZED_SCENE_GRAPH_GEOMETRY_NODES_UPDATE, std::bind(&scene_graph_baker::handle_geometry_nodes_update, this, _1) },
+	     { protocol::PacketType::LINEARIZED_SCENE_GRAPH_LIGHT_NODES_UPDATE,    std::bind(&scene_graph_baker::handle_light_nodes_update, this, _1) }
 	})
 {
-	init();
+	this->init0();
 }
 
-void BakedSceneGraph::destroy_draw_call_of_geometry(Geometry const* geometry)
+void scene_graph_baker::destroy_draw_call_of_geometry(Geometry const* geometry)
 {
 	if (m_draw_calls.contains(geometry))
 	{
@@ -198,7 +196,7 @@ void BakedSceneGraph::destroy_draw_call_of_geometry(Geometry const* geometry)
 	}
 }
 
-void BakedSceneGraph::recreate_draw_call_for_geometry(Geometry const* geometry)
+void scene_graph_baker::recreate_draw_call_for_geometry(Geometry const* geometry)
 {
 	if (!m_draw_calls.contains(geometry)) {
 		m_draw_calls.emplace(geometry, DrawCall{});
@@ -206,10 +204,10 @@ void BakedSceneGraph::recreate_draw_call_for_geometry(Geometry const* geometry)
 	DrawCall& draw_call = m_draw_calls.at(geometry);
 	realloc_vertex_buffers(draw_call, geometry);
 	realloc_indices_buffer(draw_call, geometry);
-	realloc_instances_buffers(draw_call, m_linearized_scene_graph->m_instances_by_geometry.at(geometry));
+	realloc_instances_buffers(draw_call, m_input->m_instances_by_geometry.at(geometry));
 }
 
-void BakedSceneGraph::destroy_vertex_buffers(DrawCall& draw_call)
+void scene_graph_baker::destroy_vertex_buffers(DrawCall& draw_call)
 {
 	for (VertexBuffer vertex_buffer : draw_call.m_vertex_buffers) {
 		m_gpu_allocator.destroy_buffer_if_any(vertex_buffer);
@@ -218,7 +216,7 @@ void BakedSceneGraph::destroy_vertex_buffers(DrawCall& draw_call)
 	draw_call.m_vertex_buffers.clear();
 }
 
-void BakedSceneGraph::realloc_vertex_buffers(DrawCall& draw_call, Geometry const* geometry)
+void scene_graph_baker::realloc_vertex_buffers(DrawCall& draw_call, Geometry const* geometry)
 {
 	destroy_vertex_buffers(draw_call);
 
@@ -239,13 +237,13 @@ void BakedSceneGraph::realloc_vertex_buffers(DrawCall& draw_call, Geometry const
 	}
 }
 
-void BakedSceneGraph::destroy_indices_buffer(DrawCall& draw_call)
+void scene_graph_baker::destroy_indices_buffer(DrawCall& draw_call)
 {
 	m_gpu_allocator.destroy_buffer_if_any(draw_call.m_indices_buffer.m_buffer);
 	draw_call.m_indices_buffer.m_indices_count = 0;
 }
 
-void BakedSceneGraph::realloc_indices_buffer(DrawCall& draw_call, Geometry const* geometry)
+void scene_graph_baker::realloc_indices_buffer(DrawCall& draw_call, Geometry const* geometry)
 {
 	destroy_indices_buffer(draw_call);
 
@@ -265,7 +263,7 @@ void BakedSceneGraph::realloc_indices_buffer(DrawCall& draw_call, Geometry const
 	}
 }
 
-void BakedSceneGraph::destroy_instances_buffers(DrawCall& draw_call)
+void scene_graph_baker::destroy_instances_buffers(DrawCall& draw_call)
 {
 	for (InstanceBuffer& instance_buffer : draw_call.m_instances_buffers) {
 		m_gpu_allocator.destroy_buffer_if_any(instance_buffer.m_buffer);
@@ -274,7 +272,7 @@ void BakedSceneGraph::destroy_instances_buffers(DrawCall& draw_call)
 	draw_call.m_instances_buffers.fill({});
 }
 
-void BakedSceneGraph::realloc_instances_buffers(DrawCall& draw_call, std::unordered_set<Node const*> const& instances)
+void scene_graph_baker::realloc_instances_buffers(DrawCall& draw_call, std::unordered_set<Node const*> const& instances)
 {
 	destroy_instances_buffers(draw_call);
 
@@ -342,7 +340,7 @@ void BakedSceneGraph::realloc_instances_buffers(DrawCall& draw_call, std::unorde
 	}
 }
 
-void BakedSceneGraph::update_instance(DrawCall& draw_call, Node const* node)
+void scene_graph_baker::update_instance(DrawCall& draw_call, Node const* node)
 {
 	for (size_t buffer_type = 0; buffer_type < AllocationType::Enum::Count; buffer_type++)
 	{
@@ -365,19 +363,20 @@ void BakedSceneGraph::update_instance(DrawCall& draw_call, Node const* node)
 	printf("Couldn't find the node `%s` (ID=%d). It's not baked here.\n", node->m_name.c_str(), node->m_entity);
 }
 
-void BakedSceneGraph::init()
+void scene_graph_baker::init0()
 {
 	m_recording = false;
 
-	for (auto [geometry, _] : m_linearized_scene_graph->m_instances_by_geometry) {
+	for (auto [geometry, _] : m_input->m_instances_by_geometry) {
 		recreate_draw_call_for_geometry(geometry);
 	}
 
 	m_recording = true;
 }
 
-void BakedSceneGraph::apply_changes()
+void scene_graph_baker::apply_changes()
 {
-	m_linearized_scene_graph->m_packet_pool.handle(g_packet_handler_class, m_packet_handler);
+	m_input->m_input->handle_packets_deeply(g_packet_handler_class, m_packet_handler);
+	m_input->m_packet_pool.handle(g_packet_handler_class, m_packet_handler);
 }
 

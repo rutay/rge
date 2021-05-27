@@ -130,6 +130,28 @@ namespace rge
 			return pass;
 		}
 
+		template<typename _component, typename _f, typename... _args> requires std::is_invocable_v<_f, _component, _args...>
+		void call_func_on_component(_f func, _args&& ... args)
+		{
+			auto per_pass = [this, func, ...args = std::forward<_args>(args)]<
+				size_t _idx,
+				template<typename, typename, typename...> typename _pass, typename... _components
+			>()
+			{
+				if constexpr((std::is_base_of_v<_component, _components> | ...)) {
+					auto pass = get_pass<_idx>();
+					auto component = pass->template get_component<_component>();
+
+					std::invoke(func, component, args...);
+				}
+			};
+
+			[per_pass]<size_t... _is>(std::index_sequence<_is...>){
+				(per_pass.template operator()<_is, _passes>(), ...);
+			}
+			(std::index_sequence_for<_passes...>());
+		}
+
 		pipeline(input_t* input)
 		{
 			concat_pipeline<0>(input);
@@ -172,28 +194,6 @@ namespace rge
 		using pipeline_t = pipeline<_passes...>;
 
 	public:
-		template<typename _component, typename _f, typename... _args> requires std::is_invocable_v<_f, _component, _args...>
-		void call_func_on_component(_f func, _args&& ... args)
-		{
-			auto per_pass = [func, ...args = std::forward<_args>(args)]<
-				size_t _idx,
-				template<typename, typename, typename...> typename _pass, typename... _components
-			>()
-			{
-				if constexpr((std::is_base_of_v<_component, _components> | ...)) {
-					auto pass = pipeline_t::template get_pass<_idx>();
-					auto component = pass->template get_component<_component>();
-
-					std::invoke(func, component, args...);
-				}
-			};
-
-			[per_pass]<size_t... _is>(std::index_sequence<_is...>){
-				(per_pass.template operator()<_is, _passes>(), ...);
-			}
-			(std::index_sequence_for<_passes...>());
-		}
-
 		void recreate_frame_segments(size_t count)
 		{
 			auto per_frame_holder = [count](rge::frame_holder& frame_holder) {
